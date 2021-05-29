@@ -2,7 +2,10 @@
 
 """The setup script."""
 
-from setuptools import setup, find_packages, find_namespace_packages
+import pathlib
+from os import path
+
+from setuptools import setup, find_namespace_packages
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -10,9 +13,18 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['Click>=7.0', ]
+# automatically captured required modules for install_requires in requirements.txt
+# and as well as configure dependency links
+HERE = pathlib.Path(__file__).parent.parent
+with open(path.join(HERE, 'requirements.txt'), encoding='utf-8') as f:
+    all_reqs = f.read().split('\n')
+install_requirements = [x.strip() for x in all_reqs if ('git+' not in x) and (
+    not x.startswith('#')) and (not x.startswith('-'))]
+dependency_links = [x.strip().replace('git+', '') for x in all_reqs \
+                    if 'git+' not in x]
 
-test_requirements = [ ]
+
+test_requirements = []
 
 setup(
     name='PyDeftLariat',
@@ -35,7 +47,7 @@ setup(
             'deft=deftlariat.entrypoints.cli:main',
         ],
     },
-    install_requires=requirements,
+    install_requires=install_requirements,
     license="GNU General Public License v3",
     keywords="hamcrest matchers data filters",
     long_description=readme + '\n\n' + history,

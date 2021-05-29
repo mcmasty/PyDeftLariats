@@ -1,3 +1,4 @@
 click~=7.1.2
 alabaster~=0.7.12
 setuptools~=49.6.0
+PyHamcrest~=2.0.2
