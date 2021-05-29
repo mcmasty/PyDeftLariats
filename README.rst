@@ -18,6 +18,13 @@ Python Deft Lariats
 
 Using PyHamcrest to build a collection of data filters.
 
+"Deft Lariats" is an anagram of "Data Filters". The name is paying homage to
+`"hamcrest" <https://github.com/hamcrest/PyHamcrest>`_ being an anagram of "matchers" since this project heavily
+relies on hamcrest.
+
+
+The project is wrapping the hamcrest matchers to use as data filters.
+
 
 * Free software: GNU General Public License v3
 * Documentation: https://src.readthedocs.io.

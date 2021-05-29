@@ -12,7 +12,7 @@ To install Python Deft Lariats, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install src
+    $ pip install deftlariat
 
 This is the preferred method to install Python Deft Lariats, as it will always install the most recent stable release.
 
@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/mcmasty/src
+    $ git clone git://github.com/mcmasty/PyDeftLariats
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/mcmasty/src/tarball/master
+    $ curl -OJL https://github.com/mcmasty/PyDeftLariats/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/mcmasty/src
+.. _Github repo: https://github.com/mcmasty/PyDeftLariats
 .. _tarball: https://github.com/mcmasty/src/tarball/master

@@ -1,5 +1,5 @@
 Welcome to Python Deft Lariats's documentation!
-======================================
+===============================================
 
 .. toctree::
    :maxdepth: 2
