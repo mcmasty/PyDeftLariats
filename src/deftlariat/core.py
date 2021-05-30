@@ -32,7 +32,7 @@ class Matcher(ABC):
 
     def get_key_val(self):
         """ Generate a value suitable for hashing, dictionary key"""
-        return frozenset((self.matcher_type.value, self.match_col_key.value))
+        return frozenset((self.matcher_type.value, self.match_col_key))
 
     def __repr__(self):
         return (f'{self.__class__.__name__}('
@@ -40,7 +40,7 @@ class Matcher(ABC):
 
     def __str__(self):
         return (f'Matcher for {self.matcher_type.value!r} "'
-                f'"matching of {self.match_col_key.value!r}')
+                f'"matching of {self.match_col_key!r}')
 
     def __eq__(self, other):
         if other.__class__ is self.__class__:

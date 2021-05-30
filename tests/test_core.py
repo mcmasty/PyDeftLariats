@@ -1,6 +1,6 @@
 from unittest import TestCase
 from hamcrest import assert_that, equal_to
-from deftlariat.core import AnythingMatcher, EqualTo, StartsWith, GreaterThan
+from deftlariat import AnythingMatcher, EqualTo, StartsWith, GreaterThan
 
 
 class TestAnythingMatcher(TestCase):
