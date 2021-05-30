@@ -29,7 +29,7 @@ class MatcherType(Enum):
     NONE = 'None'
     NONE_OR_EMPTY = 'NoneOrEmpty'
     NOT_NONE = 'NotNone'
-    NOT_NOT_OR_EMPTY = 'NotNoneOrEmpty'
+    NOT_NONE_OR_EMPTY = 'NotNoneOrEmpty'
 
 
 # pull values from list...support for list of input parameters and *list syntax
