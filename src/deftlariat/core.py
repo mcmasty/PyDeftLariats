@@ -275,7 +275,7 @@ class ExistsMatchers(Matcher):
             self.matcher_type = MatcherType(matcher_type)
             self.my_matcher = none
 
-        elif matcher_type in (MatcherType.NOT_NONE, MatcherType.NOT_NOT_OR_EMPTY):
+        elif matcher_type in (MatcherType.NOT_NONE, MatcherType.NOT_NONE_OR_EMPTY):
             self.matcher_type = MatcherType(matcher_type)
             self.my_matcher = not_none
 
@@ -299,7 +299,7 @@ class ExistsMatchers(Matcher):
                 )) == data_record[self.match_col_key]
                 return result
 
-            elif self.matcher_type == MatcherType.NOT_NOT_OR_EMPTY:
+            elif self.matcher_type == MatcherType.NOT_NONE_OR_EMPTY:
                 result = match_equality(all_of(
                     self.my_matcher(),
                     is_not(equal_to('')), is_not(equal_to([])),

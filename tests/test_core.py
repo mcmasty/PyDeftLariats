@@ -396,7 +396,7 @@ class TestExistenceMatcherBoundaryCases(TestCase):
     def setUp(self) -> None:
 
         exists_matcher_types = [MatcherType.NONE, MatcherType.NONE_OR_EMPTY,
-                                MatcherType.NOT_NONE, MatcherType.NOT_NOT_OR_EMPTY]
+                                MatcherType.NOT_NONE, MatcherType.NOT_NONE_OR_EMPTY]
 
         self.my_exists_comparer_list = list()
         for m_type in exists_matcher_types:
@@ -487,7 +487,7 @@ class TestExistsMatchers(TestCase):
                     "It is actually None")
 
     def test_not_none_or_empty(self):
-        my_is_none = ExistsMatchers('some_col', MatcherType.NOT_NOT_OR_EMPTY)
+        my_is_none = ExistsMatchers('some_col', MatcherType.NOT_NONE_OR_EMPTY)
 
         test_data_record = {'some_col': None}
         assert_that(my_is_none.is_match(test_data_record), equal_to(False),
