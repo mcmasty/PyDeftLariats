@@ -1,6 +1,6 @@
 from unittest import TestCase
 from hamcrest import assert_that, equal_to
-from deftlariat.core import AnythingMatcher, EqualTo, StartsWith
+from deftlariat.core import AnythingMatcher, EqualTo, StartsWith, GreaterThan
 
 
 class TestAnythingMatcher(TestCase):
@@ -39,7 +39,7 @@ class TestEqualTo(TestCase):
                     equal_to(False),
                     "Is target value in test data?")
 
-    def test_is_match_empty_list(self):
+    def test_empty_list_raises_error(self):
         test_data_record = {'name': 'Scarlet Shelton'}
 
         target_value = []
@@ -153,3 +153,60 @@ class TestStartsWith(TestCase):
         with self.assertRaises(NotImplementedError):
             dept_starts_with.is_match(target_value, test_data_record)
 
+
+class TestGreaterThan(TestCase):
+    def test_dumb(self):
+        self.assertTrue(True)
+
+    def test_is_key_not_in_data(self):
+        test_data_record = {'my_number': 5}
+        number_gt_check = GreaterThan('salary')
+
+        # Test a single item list
+        target_value = [18]
+        self.assertFalse(number_gt_check.is_match(target_value, test_data_record),
+                         "looking at field not in data record")
+
+    def test_is_gt_single_value(self):
+        test_data_record = {'my_number': 5}
+        number_gt_check = GreaterThan('my_number')
+
+        # Test a single item list
+        target_value = 4
+        self.assertTrue(number_gt_check.is_match(target_value, test_data_record),
+                        "looking at field not in data record")
+
+        # Test a single item list
+        target_value = 10
+        self.assertFalse(number_gt_check.is_match(target_value, test_data_record),
+                         "looking at field not in data record")
+
+    def test_is_gt_list_value(self):
+        test_data_record = {'my_number': 5}
+        number_gt_check = GreaterThan('my_number')
+
+        # Test a single item list
+        target_value = [4]
+        self.assertTrue(number_gt_check.is_match(target_value, test_data_record),
+                        "looking at field not in data record")
+
+        # Test a single item list
+        target_value = [10]
+        self.assertFalse(number_gt_check.is_match(target_value, test_data_record),
+                         "looking at field not in data record")
+
+    def test_empty_list_raise_error(self):
+        test_data_record = {'department': 11223344}
+        dept_gt = GreaterThan('department')
+
+        target_value = []
+        with self.assertRaises(NotImplementedError):
+            dept_gt.is_match(target_value, test_data_record)
+
+    def test_multiple_vals_raise_error(self):
+        test_data_record = {'department': 11223344}
+        dept_gt = GreaterThan('department')
+
+        target_value = [1, 2, 3, 4]
+        with self.assertRaises(NotImplementedError):
+            dept_gt.is_match(target_value, test_data_record)
