@@ -27,7 +27,7 @@ dependency_links = [x.strip().replace('git+', '') for x in all_reqs \
 test_requirements = []
 
 setup(
-    name='PyDeftLariat',
+    name='PyDeftLariats',
     author="Tyler McMaster",
     author_email='mcmasty@yahoo.com',
     python_requires='>=3.6',
@@ -51,6 +51,7 @@ setup(
     license="GNU General Public License v3",
     keywords="hamcrest matchers data filters",
     long_description=readme + '\n\n' + history,
+    long_description_content_type='text/x-rst',
     include_package_data=True,
     packages=find_namespace_packages("src"),
     package_dir={"": "src"},
