@@ -12,7 +12,7 @@ To install Python Deft Lariats, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install deftlariat
+    $ pip install PyDeftLariats
 
 This is the preferred method to install Python Deft Lariats, as it will always install the most recent stable release.
 
