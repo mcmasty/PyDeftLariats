@@ -1,7 +1,7 @@
 from unittest import TestCase
 from hamcrest import *
-from deftlariat import AnythingMatcher, EqualTo, StartsWith, GreaterThan, \
-    Matcher, MatcherType
+from deftlariat import AnythingMatcher, EqualTo, \
+    Matcher, MatcherType, NumberComparer, TextComparer
 
 
 class TestAnythingMatcher(TestCase):
@@ -78,23 +78,50 @@ class TestEqualTo(TestCase):
                          "Check against single item list")
 
 
-class TestStartsWith(TestCase):
-    def test_dumb(self):
-        self.assertTrue(True)
+class TestTextCompareBoundaryCases(TestCase):
+    def setUp(self) -> None:
 
-    def test_is_key_not_in_data(self):
+        text_matcher_types = [MatcherType.STARTS_WITH, MatcherType.CONTAINS_STRING,
+                              MatcherType.CONTAINS_STRING_IN_ORDER,
+                              MatcherType.EQUAL_TO_IGNORE_WHITESPACE,
+                              MatcherType.EQUAL_TO_IGNORE_CASE]
+
+        self.my_text_comparer_list = list()
+        for type in text_matcher_types:
+            self.my_text_comparer_list.append(TextComparer('text_col', type))
+
+    def test_empty_input_list(self):
+        test_data_record = {'text_col': "some text value"}
+
+        target_value = []
+        for comparer in self.my_text_comparer_list:
+            target_value = []
+            with self.assertRaises(NotImplementedError, msg=f"Checking {comparer}"):
+                comparer.is_match(target_value, test_data_record)
+
+    def test_key_not_in_data_record(self):
         test_data_record = {'rating': 'Superduper'}
 
         # Test a single item list
         target_value = ['Super']
-        name_check = StartsWith('name')
+        for comparer in self.my_text_comparer_list:
+            target_value = []
+            assert_that(comparer.is_match(target_value, test_data_record),
+                        equal_to(False), 'Col not present in data recrod returns FALSE')
 
-        self.assertFalse(name_check.is_match(target_value, test_data_record),
-                         "looking at field not in data record")
+    def test_bad_matcher_type(self):
+
+        with self.assertRaises(NotImplementedError):
+            self.comparer = TextComparer("Foo", MatcherType.GREATER_THAN_EQUAL_TO)
+
+
+class TestStartsWith(TestCase):
+    def test_dumb(self):
+        self.assertTrue(True)
 
     def test_is_match_multiple_values(self):
         test_data_record = {'equipment': 'baseball'}
-        ball_starts_with = StartsWith('equipment')
+        ball_starts_with = TextComparer('equipment', MatcherType.STARTS_WITH)
 
         # Test a single item list
         target_value = ['base']
@@ -116,14 +143,14 @@ class TestStartsWith(TestCase):
 
         # Test a single item list
         target_value = 'Super'
-        rating_starts_with = StartsWith('rating')
+        rating_starts_with = TextComparer('rating', MatcherType.STARTS_WITH)
 
         self.assertTrue(rating_starts_with.is_match(target_value, test_data_record),
                         "looking at field not in data record")
 
     def test_is_match_convert_to_str(self):
         test_data_record = {'department': 11223344}
-        dept_starts_with = StartsWith('department')
+        dept_starts_with = TextComparer('department', MatcherType.STARTS_WITH)
 
         # Test a single item
         target_value = '1122'
@@ -145,72 +172,150 @@ class TestStartsWith(TestCase):
         self.assertFalse(dept_starts_with.is_match(target_value, test_data_record),
                          "No-Match - one of departments")
 
-    def test_is_match_empty_list(self):
-        test_data_record = {'department': 11223344}
-        dept_starts_with = StartsWith('department')
 
-        target_value = []
-
-        with self.assertRaises(NotImplementedError):
-            dept_starts_with.is_match(target_value, test_data_record)
-
-
-class TestGreaterThan(TestCase):
+class TestEqualToIgnoreCase(TestCase):
     def test_dumb(self):
         self.assertTrue(True)
 
-    def test_is_key_not_in_data(self):
-        test_data_record = {'my_number': 5}
-        number_gt_check = GreaterThan('salary')
+    def test_is_match_multiple_values(self):
+        test_data_record = {'equipment': 'basEBAll'}
+        eq_ignore_case = TextComparer('equipment', MatcherType.EQUAL_TO_IGNORE_CASE)
 
         # Test a single item list
-        target_value = [18]
-        self.assertFalse(number_gt_check.is_match(target_value, test_data_record),
-                         "looking at field not in data record")
+        target_value = ['baseball']
+        self.assertTrue(eq_ignore_case.is_match(target_value, test_data_record),
+                        "find one of the balls")
 
-    def test_is_gt_single_value(self):
-        test_data_record = {'my_number': 5}
-        number_gt_check = GreaterThan('my_number')
+        # Test a longer list
+        target_value = ['football', 'baseball']
+        self.assertTrue(eq_ignore_case.is_match(target_value, test_data_record),
+                        "find one of the balls")
+
+        # Test a longer list, that will fail
+        target_value = ['foot', 'soccer', 'basket']
+        self.assertFalse(eq_ignore_case.is_match(target_value, test_data_record),
+                         "No balls to find")
+
+    def test_ignore_whitespace(self):
+        test_data_record = {'department': 11223344}
+        eq_ignore_whitespace = TextComparer('department', MatcherType.EQUAL_TO_IGNORE_WHITESPACE)
+
+        # Test a single item
+        target_value = '11223344'
+        self.assertTrue(eq_ignore_whitespace.is_match(target_value, test_data_record),
+                        "find one of departments")
 
         # Test a single item list
+        target_value = ['11223344']
+        self.assertTrue(eq_ignore_whitespace.is_match(target_value, test_data_record),
+                        "find one of departments")
+
+        # Test a multiple item list
+        target_value = ['2222', '1122', '11223344']
+        self.assertTrue(eq_ignore_whitespace.is_match(target_value, test_data_record),
+                        "find one of departments")
+
+        # Test a single item  -- No Match
+        target_value = '122'
+        self.assertFalse(eq_ignore_whitespace.is_match(target_value, test_data_record),
+                         "No-Match - one of departments")
+
+        test_data_record = {'department': '  11223344  '}
+        eq_ignore_whitespace = TextComparer('department', MatcherType.EQUAL_TO_IGNORE_WHITESPACE)
+
+        # Test a single item
+        target_value = '11223344'
+        self.assertTrue(eq_ignore_whitespace.is_match(target_value, test_data_record),
+                        "find one of departments")
+
+        # Test a single item list
+        target_value = ['11223344']
+        self.assertTrue(eq_ignore_whitespace.is_match(target_value, test_data_record),
+                        "find one of departments")
+
+        # Test a multiple item list
+        target_value = ['2222', '1122', '11223344']
+        self.assertTrue(eq_ignore_whitespace.is_match(target_value, test_data_record),
+                        "find one of departments")
+
+        # Test a single item  -- No Match
+        target_value = '122'
+        self.assertFalse(eq_ignore_whitespace.is_match(target_value, test_data_record),
+                         "No-Match - one of departments")
+
+
+class TestNumberComparisons(TestCase):
+
+    def setUp(self):
+        self.number_gt_check = NumberComparer('my_number', MatcherType.GREATER_THAN)
+        self.number_gte_check = NumberComparer('my_number', MatcherType.GREATER_THAN_EQUAL_TO)
+        self.number_lt_check = NumberComparer('my_number', MatcherType.LESS_THAN)
+        self.number_lte_check = NumberComparer('my_number', MatcherType.LESS_THAN_EQUAL_TO)
+        self.number_close_check = NumberComparer('my_number', MatcherType.CLOSE_TO)
+
+    def test_dumb(self):
+        self.assertTrue(True)
+
+    def test_single_value(self):
+        test_data_record = {'my_number': 5}
+
+        # Test a single item
         target_value = 4
-        self.assertTrue(number_gt_check.is_match(target_value, test_data_record),
-                        "looking at field not in data record")
+        self.assertTrue(self.number_gt_check.is_match(target_value, test_data_record),
+                        " 5 > 4 = True")
+        self.assertTrue(self.number_gte_check.is_match(target_value, test_data_record),
+                        " 5 >= True ")
+        self.assertFalse(self.number_lt_check.is_match(target_value, test_data_record),
+                         " 5 < 4 = False")
+        self.assertFalse(self.number_lte_check.is_match(target_value, test_data_record),
+                         " 5 <= 4 = False ")
+        self.assertTrue(self.number_close_check.is_match((target_value, 2), test_data_record),
+                        " 5 close to (4,2) = True")
+        self.assertTrue(self.number_close_check.is_match((target_value, 1), test_data_record),
+                        " 5 close to (4,2) = True")
 
-        # Test a single item list
+        # Test a single item
         target_value = 10
-        self.assertFalse(number_gt_check.is_match(target_value, test_data_record),
-                         "looking at field not in data record")
+
+        self.assertFalse(self.number_gt_check.is_match(target_value, test_data_record),
+                         " 5 > 10 = False")
+        self.assertFalse(self.number_gte_check.is_match(target_value, test_data_record),
+                         " 5 >= 10 False ")
+        self.assertTrue(self.number_lt_check.is_match(target_value, test_data_record),
+                        " 5 < 10 = True")
+        self.assertTrue(self.number_lte_check.is_match(target_value, test_data_record),
+                        " 5 <= 10 = True ")
+        self.assertFalse(self.number_close_check.is_match((target_value, 2), test_data_record),
+                         " 5 close to (10,2) = False")
+        self.assertFalse(self.number_close_check.is_match((target_value, 1), test_data_record),
+                         " 5 close to (10,2) = False")
 
     def test_is_gt_list_value(self):
         test_data_record = {'my_number': 5}
-        number_gt_check = GreaterThan('my_number')
 
         # Test a single item list
         target_value = [4]
-        self.assertTrue(number_gt_check.is_match(target_value, test_data_record),
+        self.assertTrue(self.number_gt_check.is_match(target_value, test_data_record),
                         "looking at field not in data record")
 
         # Test a single item list
         target_value = [10]
-        self.assertFalse(number_gt_check.is_match(target_value, test_data_record),
+        self.assertFalse(self.number_gt_check.is_match(target_value, test_data_record),
                          "looking at field not in data record")
 
     def test_empty_list_raise_error(self):
-        test_data_record = {'department': 11223344}
-        dept_gt = GreaterThan('department')
+        test_data_record = {'my_number': 11223344}
 
         target_value = []
         with self.assertRaises(NotImplementedError):
-            dept_gt.is_match(target_value, test_data_record)
+            self.number_gt_check.is_match(target_value, test_data_record)
 
     def test_multiple_vals_raise_error(self):
-        test_data_record = {'department': 11223344}
-        dept_gt = GreaterThan('department')
+        test_data_record = {'my_number': 11223344}
 
         target_value = [1, 2, 3, 4]
         with self.assertRaises(NotImplementedError):
-            dept_gt.is_match(target_value, test_data_record)
+            self.number_gt_check.is_match(target_value, test_data_record)
 
 
 class AbstractTestMatcher(Matcher):
@@ -246,3 +351,41 @@ class TestMatcher(TestCase):
             abc_matcher.is_match("target", "data_record")
 
 
+class TestNumberMatcherBoundaryCases(TestCase):
+    def setUp(self) -> None:
+
+        number_matcher_types = [MatcherType.GREATER_THAN, MatcherType.GREATER_THAN_EQUAL_TO,
+                                MatcherType.LESS_THAN, MatcherType.LESS_THAN_EQUAL_TO,
+                                MatcherType.CLOSE_TO]
+        self.my_number_comparere_list = list()
+        for type in number_matcher_types:
+            self.my_number_comparere_list.append(NumberComparer('number_col', type))
+
+    def test_empty_input(self):
+        test_data_record = {'number_col': 11223344}
+
+        for comparer in self.my_number_comparere_list:
+            target_value = []
+            with self.assertRaises(NotImplementedError, msg=f"Checking {comparer}"):
+                comparer.is_match(target_value, test_data_record)
+
+    def test_key_not_in_data_record(self):
+        test_data_record = {'some_other_columns': 11223344}
+
+        for comparer in self.my_number_comparere_list:
+            target_value = []
+
+            assert_that(comparer.is_match(target_value, test_data_record),
+                        equal_to(False), "Return False when field not available.")
+
+    def test_reject_multiple_inputs(self):
+        test_data_record = {'number_col': 11223344}
+
+        for comparer in self.my_number_comparere_list:
+            target_value = [1, 2, 3, 4]
+            with self.assertRaises(NotImplementedError, msg=f"Checking {comparer}"):
+                comparer.is_match(target_value, test_data_record)
+
+    def test_bad_matcher_type(self):
+        with self.assertRaises(NotImplementedError):
+            self.comparer = NumberComparer("Foo", MatcherType.STARTS_WITH)

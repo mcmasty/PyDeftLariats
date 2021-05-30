@@ -34,6 +34,8 @@ Features
 --------
 
 * TODO
+*   Build CLI
+*   Build Sample Applications
 
 Credits
 -------

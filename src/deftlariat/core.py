@@ -3,7 +3,10 @@ __version__ = '0.0.1'
 
 from abc import ABC, abstractmethod
 from hamcrest import anything, match_equality, equal_to, has_item, starts_with, \
-    greater_than, greater_than_or_equal_to
+    greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, \
+    close_to, contains_string, string_contains_in_order, equal_to_ignoring_case, \
+    equal_to_ignoring_whitespace
+
 import logging
 
 from enum import Enum
@@ -14,9 +17,17 @@ class MatcherType(Enum):
     ANYTHING = 'Anything'
     EQUAL_TO = 'EqualTo'
     STARTS_WITH = 'StartsWith'
+    CONTAINS_STRING = 'ContainsString'
+    CONTAINS_STRING_IN_ORDER = 'ContainsStringInOrder'
+    EQUAL_TO_IGNORE_CASE = 'EqualToIgnoreCase'
+    EQUAL_TO_IGNORE_WHITESPACE = 'EqualToIgnoreWhitespace'
     GREATER_THAN = 'GreaterThan'
+    GREATER_THAN_EQUAL_TO = 'GreaterThanEqualTo'
+    LESS_THAN = 'LessThan'
+    LESS_THAN_EQUAL_TO = 'LessThanEqualTo'
+    CLOSE_TO = 'CloseTo'
 
-
+# pull values from list...support for list of input parameters and *list syntax
 def pull_val(x):
     return x
 
@@ -79,8 +90,6 @@ class AnythingMatcher(Matcher):
 
 
 
-
-
 class EqualTo(Matcher):
     """ Equal To matching style. Cast everything to str. """
 
@@ -123,12 +132,36 @@ class EqualTo(Matcher):
                     == str(data_record[self.match_col_key]))
 
 
-class StartsWith(Matcher):
+class TextComparer(Matcher):
 
-    def __init__(self, match_col_key):
+    def __init__(self, match_col_key, matcher_type):
         super().__init__(match_col_key)
         self.match_col_key = match_col_key
-        self.matcher_type = MatcherType.STARTS_WITH
+
+        if matcher_type == MatcherType.STARTS_WITH:
+            self.matcher_type = MatcherType.STARTS_WITH
+            self.my_matcher = starts_with
+
+        elif matcher_type == MatcherType.CONTAINS_STRING:
+            self.matcher_type = MatcherType.CONTAINS_STRING
+            self.my_matcher = contains_string
+
+        elif matcher_type == MatcherType.CONTAINS_STRING_IN_ORDER:
+            self.matcher_type = MatcherType.CONTAINS_STRING_IN_ORDER
+            self.my_matcher = string_contains_in_order
+
+        elif matcher_type == MatcherType.EQUAL_TO_IGNORE_CASE:
+            self.matcher_type = MatcherType.EQUAL_TO_IGNORE_CASE
+            self.my_matcher = equal_to_ignoring_case
+
+        elif matcher_type == MatcherType.EQUAL_TO_IGNORE_WHITESPACE:
+            self.matcher_type = MatcherType.EQUAL_TO_IGNORE_WHITESPACE
+            self.my_matcher = equal_to_ignoring_whitespace
+
+        else:
+            raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
+
+
 
     def is_match(self, match_values, data_record) -> bool:
 
@@ -139,34 +172,56 @@ class StartsWith(Matcher):
 
         if len(match_values) == 0:
             self.my_logger.warning("No Match Values provided, raising Error")
-            raise NotImplementedError("Cannot use StartsWith to check for "
+            raise NotImplementedError(f"Cannot use {self.matcher_type.value} to check for "
                                       "empty string. Use None or Not_None.")
 
         elif isinstance(match_values, list):
 
             if len(match_values) == 1:
                 q_match_values = pull_val(*match_values)
-                return (match_equality(starts_with(q_match_values))
+                return (match_equality(self.my_matcher(q_match_values))
                         == str(data_record[self.match_col_key]))
             else:
                 matches_list = [q for q in match_values
-                                if match_equality(starts_with(q))
+                                if match_equality(self.my_matcher(q))
                                 == str(data_record[self.match_col_key])]
                 if len(matches_list) > 0:
                     return True
                 else:
                     return False
         else:
-            return (match_equality(starts_with(match_values))
+            return (match_equality(self.my_matcher(match_values))
                     == str(data_record[self.match_col_key]))
 
 
-class GreaterThan(Matcher):
+class NumberComparer(Matcher):
 
-    def __init__(self, match_col_key):
+    def __init__(self, match_col_key, matcher_type):
         super().__init__(match_col_key)
         self.match_col_key = match_col_key
-        self.matcher_type = MatcherType.GREATER_THAN
+
+        if matcher_type == MatcherType.GREATER_THAN:
+            self.matcher_type = MatcherType.GREATER_THAN
+            self.my_matcher = greater_than
+
+        elif matcher_type == MatcherType.GREATER_THAN_EQUAL_TO:
+            self.matcher_type = MatcherType.GREATER_THAN_EQUAL_TO
+            self.my_matcher = greater_than_or_equal_to
+
+        elif matcher_type == MatcherType.LESS_THAN:
+            self.matcher_type = MatcherType.LESS_THAN
+            self.my_matcher = less_than
+
+        elif matcher_type == MatcherType.LESS_THAN_EQUAL_TO:
+            self.matcher_type = MatcherType.LESS_THAN_EQUAL_TO
+            self.my_matcher = less_than_or_equal_to
+
+        elif matcher_type == MatcherType.CLOSE_TO:
+            self.matcher_type = MatcherType.CLOSE_TO
+            self.my_matcher = close_to
+        else:
+            raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
+
 
     def is_match(self, match_values, data_record) -> bool:
         if self.match_col_key not in data_record:
@@ -182,12 +237,18 @@ class GreaterThan(Matcher):
                                           "empty string. Use None or Not_None.")
             elif len(match_values) == 1:
                 q_match_values = pull_val(*match_values)
-                return (match_equality(greater_than(q_match_values))
+                return (match_equality(self.my_matcher(q_match_values))
                         == data_record[self.match_col_key])
             else:
                 cls_name = self.__class__.__name__
                 raise NotImplementedError(fr"Cannot use {cls_name} to check "
                                           " a list of values")
         else:
-            return (match_equality(greater_than(match_values))
-                    == data_record[self.match_col_key])
+
+            if self.matcher_type == MatcherType.CLOSE_TO:
+                # Expect a tuple for Close To for Num, Delta...so unpack values
+                return (match_equality(self.my_matcher(*match_values))
+                        == data_record[self.match_col_key])
+            else:
+                return (match_equality(self.my_matcher(match_values))
+                        == data_record[self.match_col_key])
