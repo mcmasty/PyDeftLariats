@@ -1,7 +1,7 @@
 from unittest import TestCase
 from hamcrest import *
 from deftlariat import AnythingMatcher, EqualTo, \
-    Matcher, MatcherType, NumberComparer, TextComparer
+    Matcher, MatcherType, NumberComparer, TextComparer, ExistsMatchers
 
 
 class TestAnythingMatcher(TestCase):
@@ -357,9 +357,10 @@ class TestNumberMatcherBoundaryCases(TestCase):
         number_matcher_types = [MatcherType.GREATER_THAN, MatcherType.GREATER_THAN_EQUAL_TO,
                                 MatcherType.LESS_THAN, MatcherType.LESS_THAN_EQUAL_TO,
                                 MatcherType.CLOSE_TO]
+
         self.my_number_comparere_list = list()
-        for type in number_matcher_types:
-            self.my_number_comparere_list.append(NumberComparer('number_col', type))
+        for m_type in number_matcher_types:
+            self.my_number_comparere_list.append(NumberComparer('number_col', m_type))
 
     def test_empty_input(self):
         test_data_record = {'number_col': 11223344}
@@ -389,3 +390,125 @@ class TestNumberMatcherBoundaryCases(TestCase):
     def test_bad_matcher_type(self):
         with self.assertRaises(NotImplementedError):
             self.comparer = NumberComparer("Foo", MatcherType.STARTS_WITH)
+
+
+class TestExistenceMatcherBoundaryCases(TestCase):
+    def setUp(self) -> None:
+
+        exists_matcher_types = [MatcherType.NONE, MatcherType.NONE_OR_EMPTY,
+                                MatcherType.NOT_NONE, MatcherType.NOT_NOT_OR_EMPTY]
+
+        self.my_exists_comparer_list = list()
+        for m_type in exists_matcher_types:
+            self.my_exists_comparer_list.append(ExistsMatchers('number_col', m_type))
+
+
+    def test_key_not_in_data_record(self):
+        test_data_record = {'some_other_columns': 11223344}
+
+        for comparer in self.my_exists_comparer_list:
+            target_value = []
+
+            assert_that(comparer.is_match( test_data_record),
+                        equal_to(False), "Return False when field not available.")
+
+
+
+    def test_bad_matcher_type(self):
+        with self.assertRaises(NotImplementedError):
+            self.comparer = NumberComparer("Foo", MatcherType.STARTS_WITH)
+
+
+class TestExistsMatchers(TestCase):
+
+    def test_is_none(self):
+        my_is_none = ExistsMatchers('some_col', MatcherType.NONE)
+
+        test_data_record = {'some_col': None}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(True),
+                    "It is actually None")
+
+        test_data_record = {'some_col': 'data'}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(False),
+                    "It is actually None")
+
+        test_data_record = {'some_col': ''}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(False),
+                    "It is actually None")
+
+        test_data_record = {'some_col': []}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(False),
+                    "It is actually None")
+
+    def test_not_none(self):
+        my_not_none = ExistsMatchers('some_col', MatcherType.NOT_NONE)
+
+        test_data_record = {'some_col': None}
+        assert_that(my_not_none.is_match(test_data_record), equal_to(False),
+                    "It is actually None")
+
+        test_data_record = {'some_col': 'data'}
+        assert_that(my_not_none.is_match(test_data_record), equal_to(True),
+                    "It is actually None")
+
+        test_data_record = {'some_col': ''}
+        assert_that(my_not_none.is_match(test_data_record), equal_to(True),
+                    "It is actually None")
+
+        test_data_record = {'some_col': []}
+        assert_that(my_not_none.is_match(test_data_record), equal_to(True),
+                    "It is actually None")
+
+    def test_is_none_or_empty(self):
+        my_is_none = ExistsMatchers('some_col', MatcherType.NONE_OR_EMPTY)
+
+        test_data_record = {'some_col': None}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(True),
+                    "It is actually None")
+
+        test_data_record = {'some_col': 'data'}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(False),
+                    "It is actually None")
+
+        test_data_record = {'some_col': ''}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(True),
+                    "It is actually None")
+
+        test_data_record = {'some_col': []}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(True),
+                    "It is actually None")
+
+        test_data_record = {'some_col': {}}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(True),
+                    "It is actually None")
+
+        test_data_record = {'some_col': ()}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(True),
+                    "It is actually None")
+
+    def test_not_none_or_empty(self):
+        my_is_none = ExistsMatchers('some_col', MatcherType.NOT_NOT_OR_EMPTY)
+
+        test_data_record = {'some_col': None}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(False),
+                    "It is actually None")
+
+        test_data_record = {'some_col': 'data'}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(True),
+                    "It is actually None")
+
+        test_data_record = {'some_col': ''}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(False),
+                    "It is actually None")
+
+        test_data_record = {'some_col': []}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(False),
+                    "It is actually None")
+
+        test_data_record = {'some_col': {}}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(False),
+                    "It is actually None")
+
+        test_data_record = {'some_col': ()}
+        assert_that(my_is_none.is_match(test_data_record), equal_to(False),
+                    "It is actually None")

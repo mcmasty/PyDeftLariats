@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from hamcrest import anything, match_equality, equal_to, has_item, starts_with, \
     greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, \
     close_to, contains_string, string_contains_in_order, equal_to_ignoring_case, \
-    equal_to_ignoring_whitespace
+    equal_to_ignoring_whitespace, not_none, none, any_of, all_of, is_not
 
 import logging
 
@@ -26,10 +26,16 @@ class MatcherType(Enum):
     LESS_THAN = 'LessThan'
     LESS_THAN_EQUAL_TO = 'LessThanEqualTo'
     CLOSE_TO = 'CloseTo'
+    NONE = 'None'
+    NONE_OR_EMPTY = 'NoneOrEmpty'
+    NOT_NONE = 'NotNone'
+    NOT_NOT_OR_EMPTY = 'NotNoneOrEmpty'
+
 
 # pull values from list...support for list of input parameters and *list syntax
 def pull_val(x):
     return x
+
 
 class Matcher(ABC):
 
@@ -41,6 +47,16 @@ class Matcher(ABC):
     @abstractmethod
     def is_match(self, match_values, data_record) -> bool:
         pass
+
+    def validate_key_exists(self, data_record) -> bool:
+        """ Validate match-key-column exists in data record"""
+
+        if self.match_col_key not in data_record:
+            self.my_logger.warning((f"'{self.match_col_key}' not present"
+                                    f" in data record \n\n{data_record}\n\n"))
+            return False
+        else:
+            return True
 
     def get_key_val(self):
         """ Generate a value suitable for hashing, dictionary key"""
@@ -66,6 +82,9 @@ class Matcher(ABC):
 
 
 class NothingMatcher(Matcher):
+    """
+    Matcher never successfully matches any input. Always returns False.
+    """
 
     def __init__(self, match_col_key):
         super().__init__(match_col_key)
@@ -78,6 +97,9 @@ class NothingMatcher(Matcher):
 
 
 class AnythingMatcher(Matcher):
+    """
+    Matcher always successfully matches any input. Always returns True.
+    """
 
     def __init__(self, match_col_key):
         super().__init__(match_col_key)
@@ -89,7 +111,6 @@ class AnythingMatcher(Matcher):
         return match_equality(self.my_matcher) == data_record
 
 
-
 class EqualTo(Matcher):
     """ Equal To matching style. Cast everything to str. """
 
@@ -99,10 +120,7 @@ class EqualTo(Matcher):
         self.matcher_type = MatcherType.EQUAL_TO
 
     def is_match(self, match_values, data_record) -> bool:
-
-        if self.match_col_key not in data_record:
-            self.my_logger.warning((f"'{self.match_col_key}' not present"
-                                    f" in data record \n\n{data_record}\n\n"))
+        if not self.validate_key_exists(data_record):
             return False
 
         if len(match_values) == 0:
@@ -161,13 +179,9 @@ class TextComparer(Matcher):
         else:
             raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
 
-
-
     def is_match(self, match_values, data_record) -> bool:
 
-        if self.match_col_key not in data_record:
-            self.my_logger.warning((f"'{self.match_col_key}' not present"
-                                    f" in data record \n\n{data_record}\n\n"))
+        if not self.validate_key_exists(data_record):
             return False
 
         if len(match_values) == 0:
@@ -222,11 +236,8 @@ class NumberComparer(Matcher):
         else:
             raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
 
-
     def is_match(self, match_values, data_record) -> bool:
-        if self.match_col_key not in data_record:
-            self.my_logger.warning((f"'{self.match_col_key}' not present"
-                                    f" in data record \n\n{data_record}\n\n"))
+        if not self.validate_key_exists(data_record):
             return False
 
         if isinstance(match_values, list):
@@ -252,3 +263,48 @@ class NumberComparer(Matcher):
             else:
                 return (match_equality(self.my_matcher(match_values))
                         == data_record[self.match_col_key])
+
+
+class ExistsMatchers(Matcher):
+
+    def __init__(self, match_col_key, matcher_type):
+        super().__init__(match_col_key)
+        self.match_col_key = match_col_key
+
+        if matcher_type in (MatcherType.NONE, MatcherType.NONE_OR_EMPTY):
+            self.matcher_type = MatcherType(matcher_type)
+            self.my_matcher = none
+
+        elif matcher_type in (MatcherType.NOT_NONE, MatcherType.NOT_NOT_OR_EMPTY):
+            self.matcher_type = MatcherType(matcher_type)
+            self.my_matcher = not_none
+
+        else:
+            raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
+
+    def is_match(self, data_record) -> bool:
+
+        if not self.validate_key_exists(data_record):
+            return False
+
+        if self.matcher_type in (MatcherType.NONE, MatcherType.NOT_NONE):
+            return (match_equality(self.my_matcher())
+                    == data_record[self.match_col_key])
+        else:
+            r""" Special case of chaining equal to with none """
+            if self.matcher_type == MatcherType.NONE_OR_EMPTY:
+                result = match_equality(any_of(
+                    self.my_matcher(),
+                    equal_to(''), equal_to([]), equal_to({}), equal_to(())
+                )) == data_record[self.match_col_key]
+                return result
+
+            elif self.matcher_type == MatcherType.NOT_NOT_OR_EMPTY:
+                result = match_equality(all_of(
+                    self.my_matcher(),
+                    is_not(equal_to('')), is_not(equal_to([])),
+                    is_not(equal_to({})), is_not(equal_to(()))
+                )) == data_record[self.match_col_key]
+                return result
+            else:
+                raise NotImplementedError(f"Matcher for {self.matcher_type} not implemented")
