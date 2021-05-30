@@ -15,7 +15,7 @@ with open('HISTORY.rst') as history_file:
 
 # automatically captured required modules for install_requires in requirements.txt
 # and as well as configure dependency links
-HERE = pathlib.Path(__file__).parent.parent
+HERE = pathlib.Path(__file__).parent
 with open(path.join(HERE, 'requirements.txt'), encoding='utf-8') as f:
     all_reqs = f.read().split('\n')
 install_requirements = [x.strip() for x in all_reqs if ('git+' not in x) and (

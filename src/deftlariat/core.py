@@ -16,13 +16,13 @@ class MatcherType(Enum):
 
 class Matcher(ABC):
 
-    def __init__(self, match_col_key, matcher_type):
-        self.matcher_type = matcher_type
+    def __init__(self, match_col_key):
+        self.matcher_type = None
         self.match_col_key = match_col_key
         self.my_logger = logging.getLogger('matching')
 
     @abstractmethod
-    def is_match(self, match_values, lead_data) -> bool:
+    def is_match(self, match_values, data_record) -> bool:
         pass
 
     def get_key_val(self):
@@ -50,76 +50,95 @@ class Matcher(ABC):
 
 class AnythingMatcher(Matcher):
 
-    def __init__(self, match_col_key, matcher_type):
-        super().__init__(match_col_key, matcher_type)
+    def __init__(self, match_col_key):
+        super().__init__(match_col_key)
         self.match_col_key = match_col_key
+        self.matcher_type = MatcherType.ANYTHING
         self.my_matcher = anything(f"Anything for {match_col_key}")
 
-    def is_match(self, match_values, lead_data) -> bool:
-        # Special handling for '*_row' ... e.g. 'person_row'
-        if self.match_col_key.value not in lead_data \
-                and '_row' not in self.match_col_key.value:
-            self.my_logger.warning((f"'{self.match_col_key}' not in lead data,"
-                                    " but anyting matcher, so proceed."))
-        return match_equality(self.my_matcher) == lead_data
+    def is_match(self, match_values, data_record) -> bool:
+        return match_equality(self.my_matcher) == data_record
 
 
 class EqualTo(Matcher):
     """ Equal To matching style. Cast everything to str. """
 
-    def __init__(self, match_col_key, matcher_type):
-        super().__init__(match_col_key, matcher_type)
+    def __init__(self, match_col_key, ):
+        super().__init__(match_col_key, )
         self.match_col_key = match_col_key
+        self.matcher_type = MatcherType.EQUAL_TO
 
-    def is_match(self, match_values, lead_data) -> bool:
-        def pull_val(x): return x
-        if self.match_col_key.value not in lead_data:
-            self.my_logger.warning((f"'{self.match_col_key.value}' not present"
-                                    f" in lead data \n\n{lead_data}\n\n"))
+    def is_match(self, match_values, data_record) -> bool:
+        def pull_val(x):
+            return x
+
+        if self.match_col_key not in data_record:
+            self.my_logger.warning((f"'{self.match_col_key}' not present"
+                                    f" in data record \n\n{data_record}\n\n"))
             return False
 
         if len(match_values) == 0:
-            self.my_logger.warning("No Match Values provided, return False")
-            return False
-        elif len(match_values) == 1:
-            q_match_values = pull_val(*match_values)
-            return (match_equality(equal_to(q_match_values))
-                    == str(lead_data[self.match_col_key.value]))
+            self.my_logger.warning("No Match Values provided, raising Error")
+            raise NotImplementedError("Cannot use Equal To to check for empty "
+                                      "string. Use None or Not_None.")
+
+        elif isinstance(match_values, list):
+            if len(match_values) == 0:
+                # covered by len ==0 above
+                pass
+
+            elif len(match_values) == 1:
+                q_match_values = pull_val(*match_values)
+                return (match_equality(equal_to(q_match_values))
+                        == str(data_record[self.match_col_key]))
+
+            else:
+                # has_item will iterate a sequence ...
+                return match_equality(
+                    has_item(equal_to(
+                        data_record[self.match_col_key]))) == [
+                           str(x) for x in match_values]
 
         else:
-            # has_item will iterate a sequence ...
-            return match_equality(
-                has_item(equal_to(
-                    lead_data[self.match_col_key.value]))) == [
-                str(x) for x in match_values]
+            return (match_equality(equal_to(match_values))
+                    == str(data_record[self.match_col_key]))
 
 
 class StartsWith(Matcher):
 
-    def __init__(self, match_col_key, matcher_type):
-        super().__init__(match_col_key, matcher_type)
+    def __init__(self, match_col_key):
+        super().__init__(match_col_key)
         self.match_col_key = match_col_key
+        self.matcher_type = MatcherType.STARTS_WITH
 
-    def is_match(self, match_values, lead_data) -> bool:
-        def pull_val(x): return x
-        if self.match_col_key.value not in lead_data:
-            self.my_logger.warning((f"'{self.match_col_key.value}' not present"
-                                    f" in lead data \n\n{lead_data}\n\n"))
+    def is_match(self, match_values, data_record) -> bool:
+        def pull_val(x):
+            return x
+
+        if self.match_col_key not in data_record:
+            self.my_logger.warning((f"'{self.match_col_key}' not present"
+                                    f" in data record \n\n{data_record}\n\n"))
             return False
 
         if len(match_values) == 0:
-            self.my_logger.warning("No Match Values provided, return False")
-            return False
-        elif len(match_values) == 1:
-            q_match_values = pull_val(*match_values)
-            return (match_equality(starts_with(q_match_values))
-                    == str(lead_data[self.match_col_key.value]))
-        else:
+            self.my_logger.warning("No Match Values provided, raising Error")
+            raise NotImplementedError("Cannot use StartsWith to check for "
+                                      "empty string. Use None or Not_None.")
 
-            matches_list = [q for q in match_values
-                            if match_equality(starts_with(q))
-                            == str(lead_data[self.match_col_key.value])]
-            if len(matches_list) > 0:
-                return True
+        elif isinstance(match_values, list):
+
+            if len(match_values) == 1:
+                q_match_values = pull_val(*match_values)
+                return (match_equality(starts_with(q_match_values))
+                        == str(data_record[self.match_col_key]))
             else:
-                return False
+                matches_list = [q for q in match_values
+                                if match_equality(starts_with(q))
+                                == str(data_record[self.match_col_key])]
+                if len(matches_list) > 0:
+                    return True
+                else:
+                    return False
+        else:
+            return (match_equality(starts_with(match_values))
+                    == str(data_record[self.match_col_key]))

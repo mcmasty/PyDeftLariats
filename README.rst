@@ -10,7 +10,7 @@ Python Deft Lariats
         :target: https://travis-ci.com/mcmasty/src
 
 .. image:: https://readthedocs.org/projects/src/badge/?version=latest
-        :target: https://src.readthedocs.io/en/latest/?version=latest
+        :target: https://pydeftlariats.readthedocs.io/en/latest/?version=latest
         :alt: Documentation Status
 
 
