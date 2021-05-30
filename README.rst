@@ -27,7 +27,7 @@ The project is wrapping the hamcrest matchers to use as data filters.
 
 
 * Free software: GNU General Public License v3
-* Documentation: https://src.readthedocs.io.
+* Documentation: https://pydeftlariats.readthedocs.io/.
 
 
 Features
