@@ -21,4 +21,7 @@ History
 * Adding existence logic: None, NotNone, NoneOrEmpty, NotNoneOrEmpty
 
 
+1.1.3 (2021-05-30)
+------------------
+* Added options to convert None to int value for numeric comparisons
 

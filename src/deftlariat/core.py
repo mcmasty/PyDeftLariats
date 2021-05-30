@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from hamcrest import anything, match_equality, equal_to, has_item, starts_with, \
     greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, \
     close_to, contains_string, string_contains_in_order, equal_to_ignoring_case, \
-    equal_to_ignoring_whitespace, not_none, none, any_of, all_of, is_not
+    equal_to_ignoring_whitespace, not_none, none, any_of, all_of, is_not, is_
 
 import logging
 
@@ -210,9 +210,15 @@ class TextComparer(Matcher):
 
 class NumberComparer(Matcher):
 
-    def __init__(self, match_col_key, matcher_type):
+    def __init__(self, match_col_key, matcher_type, convert_none_to=None):
         super().__init__(match_col_key)
         self.match_col_key = match_col_key
+        self.replacement_val = None
+        if  convert_none_to is None:
+            self.convert_none = False
+        else:
+            self.convert_none = True
+            self.replacement_val = convert_none_to
 
         if matcher_type == MatcherType.GREATER_THAN:
             self.matcher_type = MatcherType.GREATER_THAN
@@ -236,6 +242,14 @@ class NumberComparer(Matcher):
         else:
             raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
 
+    def get_record_value(self, data_record) -> int:
+        """  If you want to convert a None to an Int, set a replacement value. """
+        if self.convert_none and data_record[self.match_col_key] is None:
+            return_val =  self.replacement_val
+        else:
+            return_val =  data_record[self.match_col_key]
+        return return_val
+
     def is_match(self, match_values, data_record) -> bool:
         if not self.validate_key_exists(data_record):
             return False
@@ -248,8 +262,9 @@ class NumberComparer(Matcher):
                                           "empty string. Use None or Not_None.")
             elif len(match_values) == 1:
                 q_match_values = pull_val(*match_values)
+                test_val = self.get_record_value(data_record)
                 return (match_equality(self.my_matcher(q_match_values))
-                        == data_record[self.match_col_key])
+                        == test_val)
             else:
                 cls_name = self.__class__.__name__
                 raise NotImplementedError(fr"Cannot use {cls_name} to check "
@@ -258,11 +273,13 @@ class NumberComparer(Matcher):
 
             if self.matcher_type == MatcherType.CLOSE_TO:
                 # Expect a tuple for Close To for Num, Delta...so unpack values
+                test_val = self.get_record_value(data_record)
                 return (match_equality(self.my_matcher(*match_values))
-                        == data_record[self.match_col_key])
+                        == test_val)
             else:
+                test_val = self.get_record_value(data_record)
                 return (match_equality(self.my_matcher(match_values))
-                        == data_record[self.match_col_key])
+                        == test_val)
 
 
 class ExistsMatchers(Matcher):

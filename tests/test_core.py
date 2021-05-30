@@ -290,6 +290,51 @@ class TestNumberComparisons(TestCase):
         self.assertFalse(self.number_close_check.is_match((target_value, 1), test_data_record),
                          " 5 close to (10,2) = False")
 
+class TestNumberComparisonsWithReplacement(TestCase):
+
+    def setUp(self):
+        self.number_gt_check = NumberComparer('my_number', MatcherType.GREATER_THAN, convert_none_to=5)
+        self.number_gte_check = NumberComparer('my_number', MatcherType.GREATER_THAN_EQUAL_TO, convert_none_to=5)
+        self.number_lt_check = NumberComparer('my_number', MatcherType.LESS_THAN, convert_none_to=5)
+        self.number_lte_check = NumberComparer('my_number', MatcherType.LESS_THAN_EQUAL_TO, convert_none_to=5)
+        self.number_close_check = NumberComparer('my_number', MatcherType.CLOSE_TO, convert_none_to=5)
+
+    def test_single_none_with_replacement(self):
+        test_data_record = {'my_number': None}
+
+        # Test a single item
+        target_value = 4
+        self.assertTrue(self.number_gt_check.is_match(target_value, test_data_record),
+                        " 5 > 4 = True")
+        self.assertTrue(self.number_gte_check.is_match(target_value, test_data_record),
+                        " 5 >= True ")
+        self.assertFalse(self.number_lt_check.is_match(target_value, test_data_record),
+                         " 5 < 4 = False")
+        self.assertFalse(self.number_lte_check.is_match(target_value, test_data_record),
+                         " 5 <= 4 = False ")
+        self.assertTrue(self.number_close_check.is_match((target_value, 2), test_data_record),
+                        " 5 close to (4,2) = True")
+        self.assertTrue(self.number_close_check.is_match((target_value, 1), test_data_record),
+                        " 5 close to (4,2) = True")
+
+        # Test a single item
+        target_value = 10
+
+        self.assertFalse(self.number_gt_check.is_match(target_value, test_data_record),
+                         " 5 > 10 = False")
+        self.assertFalse(self.number_gte_check.is_match(target_value, test_data_record),
+                         " 5 >= 10 False ")
+        self.assertTrue(self.number_lt_check.is_match(target_value, test_data_record),
+                        " 5 < 10 = True")
+        self.assertTrue(self.number_lte_check.is_match(target_value, test_data_record),
+                        " 5 <= 10 = True ")
+        self.assertFalse(self.number_close_check.is_match((target_value, 2), test_data_record),
+                         " 5 close to (10,2) = False")
+        self.assertFalse(self.number_close_check.is_match((target_value, 1), test_data_record),
+                         " 5 close to (10,2) = False")
+
+
+
     def test_is_gt_list_value(self):
         test_data_record = {'my_number': 5}
 
