@@ -10,6 +10,7 @@ from enum import Enum
 
 
 class MatcherType(Enum):
+    NOTHING = 'Nothing'
     ANYTHING = 'Anything'
     EQUAL_TO = 'EqualTo'
     STARTS_WITH = 'StartsWith'
@@ -22,7 +23,7 @@ def pull_val(x):
 class Matcher(ABC):
 
     def __init__(self, match_col_key):
-        self.matcher_type = None
+        self.matcher_type = MatcherType.NOTHING
         self.match_col_key = match_col_key
         self.my_logger = logging.getLogger('matching')
 
@@ -39,8 +40,8 @@ class Matcher(ABC):
                 f'{self.matcher_type!r}, {self.match_col_key!r})')
 
     def __str__(self):
-        return (f'Matcher for {self.matcher_type.value!r} "'
-                f'"matching of {self.match_col_key!r}')
+        return (f'Matcher for {self.matcher_type.value!r} '
+                f'matching on field {self.match_col_key!r}')
 
     def __eq__(self, other):
         if other.__class__ is self.__class__:
@@ -53,6 +54,18 @@ class Matcher(ABC):
         return hash((self.__class__, self.matcher_type, self.match_col_key))
 
 
+class NothingMatcher(Matcher):
+
+    def __init__(self, match_col_key):
+        super().__init__(match_col_key)
+        self.match_col_key = match_col_key
+        self.matcher_type = MatcherType.NOTHING
+
+    def is_match(self, match_values, data_record) -> bool:
+        self.my_logger.info("No Matcher set, defaults to Nothing Matcher. Always False.")
+        return False
+
+
 class AnythingMatcher(Matcher):
 
     def __init__(self, match_col_key):
@@ -63,6 +76,9 @@ class AnythingMatcher(Matcher):
 
     def is_match(self, match_values, data_record) -> bool:
         return match_equality(self.my_matcher) == data_record
+
+
+
 
 
 class EqualTo(Matcher):

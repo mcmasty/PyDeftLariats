@@ -1,6 +1,7 @@
 from unittest import TestCase
-from hamcrest import assert_that, equal_to
-from deftlariat import AnythingMatcher, EqualTo, StartsWith, GreaterThan
+from hamcrest import *
+from deftlariat import AnythingMatcher, EqualTo, StartsWith, GreaterThan, \
+    Matcher, MatcherType
 
 
 class TestAnythingMatcher(TestCase):
@@ -210,3 +211,38 @@ class TestGreaterThan(TestCase):
         target_value = [1, 2, 3, 4]
         with self.assertRaises(NotImplementedError):
             dept_gt.is_match(target_value, test_data_record)
+
+
+class AbstractTestMatcher(Matcher):
+    """ A class sole for testing the Abstract Base Class """
+
+    def __init__(self, match_key_col):
+        super().__init__(match_key_col)
+
+    def is_match(self, *args):
+        raise NotImplementedError
+
+
+class TestMatcher(TestCase):
+    def test_reper(self):
+        abc_matcher = AbstractTestMatcher("some_key_field")
+        assert_that("some_key_field", is_in(abc_matcher.__repr__()), "Check output")
+
+    def test_get_key_value(self):
+        abc_matcher = AbstractTestMatcher("some_key_field")
+        print(abc_matcher.get_key_val())
+
+        test_key = frozenset(('some_key_field', MatcherType.NOTHING.value))
+        assert_that(abc_matcher.get_key_val(), equal_to(test_key))
+
+    def test_str(self):
+        abc_matcher = AbstractTestMatcher("some_key_field")
+        assert_that("some_key_field", is_in(abc_matcher.__str__()), "Check output")
+        print(abc_matcher.__str__())
+
+    def test_match(self):
+        abc_matcher = AbstractTestMatcher("some_key_field")
+        with self.assertRaises(NotImplementedError):
+            abc_matcher.is_match("target", "data_record")
+
+
