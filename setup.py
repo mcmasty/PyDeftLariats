@@ -44,7 +44,7 @@ setup(
     description="Using PyHamcrest to build a collection of data filters.",
     entry_points={
         'console_scripts': [
-            'deft=deftlariat.entrypoints.cli:main',
+            'deft=deftlariat.scripts.cli:deft_cli',
         ],
     },
     install_requires=install_requirements,

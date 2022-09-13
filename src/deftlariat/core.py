@@ -136,18 +136,17 @@ class EqualTo(Matcher):
             elif len(match_values) == 1:
                 q_match_values = pull_val(*match_values)
                 return (match_equality(equal_to(q_match_values))
-                        == str(data_record[self.match_col_key]))
+                        == data_record[self.match_col_key])
 
             else:
                 # has_item will iterate a sequence ...
                 return match_equality(
                     has_item(equal_to(
-                        data_record[self.match_col_key]))) == [
-                           str(x) for x in match_values]
+                        data_record[self.match_col_key]))) == [x for x in match_values]
 
         else:
             return (match_equality(equal_to(match_values))
-                    == str(data_record[self.match_col_key]))
+                    == data_record[self.match_col_key])
 
 
 class TextComparer(Matcher):
@@ -214,7 +213,7 @@ class NumberComparer(Matcher):
         super().__init__(match_col_key)
         self.match_col_key = match_col_key
         self.replacement_val = None
-        if  convert_none_to is None:
+        if convert_none_to is None:
             self.convert_none = False
         else:
             self.convert_none = True
@@ -245,9 +244,9 @@ class NumberComparer(Matcher):
     def get_record_value(self, data_record) -> int:
         """  If you want to convert a None to an Int, set a replacement value. """
         if self.convert_none and data_record[self.match_col_key] is None:
-            return_val =  self.replacement_val
+            return_val = self.replacement_val
         else:
-            return_val =  data_record[self.match_col_key]
+            return_val = data_record[self.match_col_key]
         return return_val
 
     def is_match(self, match_values, data_record) -> bool:

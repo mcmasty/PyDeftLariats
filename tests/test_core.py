@@ -77,6 +77,18 @@ class TestEqualTo(TestCase):
         self.assertFalse(name_check.is_match(target_value, test_data_record),
                          "Check against single item list")
 
+    def test_boolean(self):
+        test_data_record = {'full_name': True}
+
+        target_value = [False]
+        name_check = EqualTo('full_name')
+
+        self.assertFalse(name_check.is_match(target_value, test_data_record),
+                         "Check boolean no match")
+
+        self.assertTrue(name_check.is_match([True], test_data_record),
+                        "Check boolean does match")
+
 
 class TestTextCompareBoundaryCases(TestCase):
     def setUp(self) -> None:
@@ -290,6 +302,7 @@ class TestNumberComparisons(TestCase):
         self.assertFalse(self.number_close_check.is_match((target_value, 1), test_data_record),
                          " 5 close to (10,2) = False")
 
+
 class TestNumberComparisonsWithReplacement(TestCase):
 
     def setUp(self):
@@ -332,8 +345,6 @@ class TestNumberComparisonsWithReplacement(TestCase):
                          " 5 close to (10,2) = False")
         self.assertFalse(self.number_close_check.is_match((target_value, 1), test_data_record),
                          " 5 close to (10,2) = False")
-
-
 
     def test_is_gt_list_value(self):
         test_data_record = {'my_number': 5}
@@ -447,17 +458,14 @@ class TestExistenceMatcherBoundaryCases(TestCase):
         for m_type in exists_matcher_types:
             self.my_exists_comparer_list.append(ExistsMatchers('number_col', m_type))
 
-
     def test_key_not_in_data_record(self):
         test_data_record = {'some_other_columns': 11223344}
 
         for comparer in self.my_exists_comparer_list:
             target_value = []
 
-            assert_that(comparer.is_match( test_data_record),
+            assert_that(comparer.is_match(test_data_record),
                         equal_to(False), "Return False when field not available.")
-
-
 
     def test_bad_matcher_type(self):
         with self.assertRaises(NotImplementedError):
