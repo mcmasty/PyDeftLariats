@@ -53,7 +53,7 @@ class Matcher(ABC):
 
         if self.match_col_key not in data_record:
             self.my_logger.warning((f"'{self.match_col_key}' not present"
-                                    f" in data record \n\n{data_record}\n\n"))
+                                    f" in data record \n\n{data_record}. Matcher will return False\n\n"))
             return False
         else:
             return True
