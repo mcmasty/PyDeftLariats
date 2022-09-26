@@ -1,7 +1,7 @@
 from unittest import TestCase
 from hamcrest import *
 from deftlariat import AnythingMatcher, EqualTo, \
-    Matcher, MatcherType, NumberComparer, TextComparer, ExistsMatchers
+    Matcher, MatcherType, NumberComparer, TextComparer, ExistsMatchers, DictMatchers
 
 
 class TestAnythingMatcher(TestCase):
@@ -565,3 +565,91 @@ class TestExistsMatchers(TestCase):
         test_data_record = {'some_col': ()}
         assert_that(my_is_none.is_match(test_data_record), equal_to(False),
                     "It is actually None")
+
+
+class TestDictMatchers(TestCase):
+
+    def test_has_entries(self):
+        operator = DictMatchers('dumb', MatcherType.HAS_ENTRIES)
+        assert_that(operator.is_match('a', 'b', data_record={'dumb': {'a': 'b'}}),
+                    equal_to(True))
+
+        assert_that(operator.is_match({'a': 'b'}, data_record={'dumb': {'a': 'b'}}),
+                    equal_to(True))
+
+        assert_that(operator.is_match({'foo': 'bar'}, data_record={'dumb': {'a': 'b'}}),
+                    equal_to(False))
+        assert_that(operator.is_match('foo', 'bar', data_record={'dumb': {'a': 'b'}}),
+                    equal_to(False))
+
+        assert_that(operator.is_match('a', 'b', 'c', 'd',
+                                      data_record={'dumb': {'c': 'd', 'a': 'b'}}),
+                    equal_to(True))
+
+        assert_that(operator.is_match('a', 'b',
+                                      data_record={'dumb': [
+                                          {'1': '2'}, {'c': 'd'}, {'a': 'b'}]}),
+                    equal_to(True))
+
+        assert_that(operator.is_match([{'a': 'b'}, {'1': '2'}],
+                                      data_record={'dumb': [
+                                          {'1': '2'}, {'c': 'd'}, {'a': 'b'}]}),
+                    equal_to(True))
+
+        assert_that(operator.is_match([{'a': 'g'}, {'1': 'g'}],
+                                      data_record={'dumb': [
+                                          {'1': '2'}, {'c': 'd'}, {'a': 'b'}]}),
+                    equal_to(False))
+
+        assert_that(operator.is_match([{'a': 'g'}, {'1': 'g'}],
+                                      data_record={'dumb': {'a': 'b'}}),
+                    equal_to(False))
+
+        assert_that(operator.is_match([{'a': 'b'}, {'1': '2'}],
+                                      data_record={'dumb': {'a': 'b'}}),
+                    equal_to(True))
+
+    def test_has_entry(self):
+        operator = DictMatchers('dumb', MatcherType.HAS_ENTRY)
+        assert_that(operator.is_match('a', 'b', data_record={'dumb': {'a': 'b'}}),
+                    equal_to(True))
+
+        assert_that(operator.is_match({'a': 'b'}, data_record={'dumb': {'a': 'b'}}),
+                    equal_to(True))
+
+        assert_that(operator.is_match({'foo': 'bar'}, data_record={'dumb': {'a': 'b'}}),
+                    equal_to(False))
+        assert_that(operator.is_match('foo', 'bar', data_record={'dumb': {'a': 'b'}}),
+                    equal_to(False))
+
+        assert_that(operator.is_match('a', 'b',
+                                      data_record={'dumb': [
+                                          {'1': '2'}, {'c': 'd'}, {'a': 'b'}]}),
+                    equal_to(True))
+
+        assert_that(operator.is_match([{'a': 'b'}, {'1': '2'}],
+                                      data_record={'dumb': [
+                                          {'1': '2'}, {'c': 'd'}, {'a': 'b'}]}),
+                    equal_to(True))
+
+        assert_that(operator.is_match([{'a': 'g'}, {'1': 'g'}],
+                                      data_record={'dumb': [
+                                          {'1': '2'}, {'c': 'd'}, {'a': 'b'}]}),
+                    equal_to(False))
+
+        assert_that(operator.is_match([{'a': 'g'}, {'1': 'g'}],
+                                      data_record={'dumb': {'a': 'b'}}),
+                    equal_to(False))
+
+        assert_that(operator.is_match([{'a': 'b'}, {'1': '2'}],
+                                      data_record={'dumb': {'a': 'b'}}),
+                    equal_to(True))
+
+    def test_has_entry_bad_input(self):
+        operator = DictMatchers('dumb', MatcherType.HAS_ENTRY)
+
+        with self.assertRaises(ValueError):
+            assert_that(operator.is_match('a', 'b', 'c', 'd',
+                                          data_record={'dumb': {'c': 'd', 'a': 'b'}}),
+                        equal_to(True))
+

@@ -2,12 +2,13 @@
 __version__ = '0.0.1'
 
 from abc import ABC, abstractmethod
+import logging
+
 from hamcrest import anything, match_equality, equal_to, has_item, starts_with, \
     greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, \
     close_to, contains_string, string_contains_in_order, equal_to_ignoring_case, \
-    equal_to_ignoring_whitespace, not_none, none, any_of, all_of, is_not, is_
-
-import logging
+    equal_to_ignoring_whitespace, not_none, none, any_of, all_of, is_not, is_, \
+    has_entry, has_entries
 
 from enum import Enum
 
@@ -30,6 +31,8 @@ class MatcherType(Enum):
     NONE_OR_EMPTY = 'NoneOrEmpty'
     NOT_NONE = 'NotNone'
     NOT_NONE_OR_EMPTY = 'NotNoneOrEmpty'
+    HAS_ENTRY = 'HasEntry'
+    HAS_ENTRIES = 'HasEntries'
 
 
 # pull values from list...support for list of input parameters and *list syntax
@@ -324,3 +327,64 @@ class ExistsMatchers(Matcher):
                 return result
             else:
                 raise NotImplementedError(f"Matcher for {self.matcher_type} not implemented")
+
+
+class DictMatchers(Matcher):
+
+    def __init__(self, match_col_key, matcher_type):
+        super().__init__(match_col_key)
+        self.match_col_key = match_col_key
+
+        if matcher_type == MatcherType.HAS_ENTRY:
+            self.matcher_type = MatcherType(matcher_type)
+            self.my_matcher = has_entry
+
+        elif matcher_type == MatcherType.HAS_ENTRIES:
+            self.matcher_type = MatcherType(matcher_type)
+            self.my_matcher = has_entries
+
+        else:
+            raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
+
+    def is_match(self, *match_values, data_record) -> bool:
+        if not self.validate_key_exists(data_record):
+            return False
+
+        if not self.validate_key_exists(data_record):
+            return False
+
+        if self.matcher_type == MatcherType.HAS_ENTRY and len(match_values) > 2:
+            raise ValueError("HAS_ENTRY matcher only accepts two values")
+
+        if isinstance(match_values[0], list) and isinstance(data_record[self.match_col_key], list):
+            """ Two lists... """
+            check_list = []
+            for m_dict in match_values[0]:
+                # Unpack list of dictionaries to list of tuples to list of match_values
+                mv = [item for tup in m_dict.items() for item in tup]
+                check_list.append(match_equality(has_item(has_entry(*mv))) == list(data_record[self.match_col_key]))
+            return any(check_list)
+
+        if isinstance(match_values[0], list) and isinstance(data_record[self.match_col_key], dict):
+            """ Two lists... """
+            check_list = []
+            for m_dict in match_values[0]:
+                # Unpack list of dictionaries to list of tuples to list of match_values
+                mv = [item for tup in m_dict.items() for item in tup]
+                check_list.append(match_equality(self.my_matcher(*mv)) == data_record[self.match_col_key])
+            return any(check_list)
+
+        if isinstance(data_record[self.match_col_key], list):
+            # has_item will iterate a sequence ...
+            return match_equality(has_item(has_entry(*match_values))) == list(data_record[self.match_col_key])
+
+        if isinstance(match_values[0], dict):
+            check_list = []
+            for m_dict in match_values:
+                # Unpack list of dictionaries to list of tuples to list of match_values
+                mv = [item for tup in m_dict.items() for item in tup]
+                check_list.append(match_equality(self.my_matcher(*mv)) == data_record[self.match_col_key])
+            return any(check_list)
+
+        return (match_equality(self.my_matcher(*match_values))
+                == data_record[self.match_col_key])
