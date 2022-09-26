@@ -613,6 +613,11 @@ class TestDictMatchers(TestCase):
                                       data_record={'dumb': [{'a': 'b'}, {'id': 'asdf', 'identifier': 'foo'}]}),
                     equal_to(True))
 
+        assert_that(operator.is_match([{'a': 'b'}, {'1': '2'}],
+                                      data_record={'dumb': None}),
+                    equal_to(False))
+
+
 
     def test_has_entry(self):
         operator = DictMatchers('dumb', MatcherType.HAS_ENTRY)
@@ -651,6 +656,12 @@ class TestDictMatchers(TestCase):
                                       data_record={'dumb': {'a': 'b'}}),
                     equal_to(True))
 
+        assert_that(operator.is_match([{'a': 'b'}, {'1': '2'}],
+                                      data_record={'dumb': None}),
+                    equal_to(False))
+
+
+
     def test_has_entry_bad_input(self):
         operator = DictMatchers('dumb', MatcherType.HAS_ENTRY)
 
@@ -658,3 +669,8 @@ class TestDictMatchers(TestCase):
             assert_that(operator.is_match('a', 'b', 'c', 'd',
                                           data_record={'dumb': {'c': 'd', 'a': 'b'}}),
                         equal_to(True))
+
+    def test_this(self):
+        target_skills = [{'id': '61d8923376841a071b5fb398', 'identifier': 'Alto Sax'}, {'id': '61d8923376841a071b5fb39a', 'identifier': 'Tenor Sax'}, {'id': '61d8923376841a071b5fb39c', 'identifier': 'Bari Sax'}, {'id': '61d8923376841a071b5fb39e', 'identifier': 'Trumpet'}, {'id': '61d8923376841a071b5fb3a0', 'identifier': 'Trombone'}, {'id': '6223aa9d10a7d3001e006f66', 'identifier': '2nd Trumpet'}]
+
+

@@ -350,7 +350,8 @@ class DictMatchers(Matcher):
         if not self.validate_key_exists(data_record):
             return False
 
-        if not self.validate_key_exists(data_record):
+        if not data_record[self.match_col_key]:
+            """ If record is None or empty, no match"""
             return False
 
         if self.matcher_type == MatcherType.HAS_ENTRY and len(match_values) > 2:
