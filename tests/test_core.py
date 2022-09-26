@@ -609,6 +609,11 @@ class TestDictMatchers(TestCase):
                                       data_record={'dumb': {'a': 'b'}}),
                     equal_to(True))
 
+        assert_that(operator.is_match([{'a': 'b'}, {'1': '2'}, {'id': 'asdf', 'identifier': 'foo'}],
+                                      data_record={'dumb': [{'a': 'b'}, {'id': 'asdf', 'identifier': 'foo'}]}),
+                    equal_to(True))
+
+
     def test_has_entry(self):
         operator = DictMatchers('dumb', MatcherType.HAS_ENTRY)
         assert_that(operator.is_match('a', 'b', data_record={'dumb': {'a': 'b'}}),
@@ -632,6 +637,7 @@ class TestDictMatchers(TestCase):
                                           {'1': '2'}, {'c': 'd'}, {'a': 'b'}]}),
                     equal_to(True))
 
+
         assert_that(operator.is_match([{'a': 'g'}, {'1': 'g'}],
                                       data_record={'dumb': [
                                           {'1': '2'}, {'c': 'd'}, {'a': 'b'}]}),
@@ -652,4 +658,3 @@ class TestDictMatchers(TestCase):
             assert_that(operator.is_match('a', 'b', 'c', 'd',
                                           data_record={'dumb': {'c': 'd', 'a': 'b'}}),
                         equal_to(True))
-

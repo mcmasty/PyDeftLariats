@@ -362,7 +362,7 @@ class DictMatchers(Matcher):
             for m_dict in match_values[0]:
                 # Unpack list of dictionaries to list of tuples to list of match_values
                 mv = [item for tup in m_dict.items() for item in tup]
-                check_list.append(match_equality(has_item(has_entry(*mv))) == list(data_record[self.match_col_key]))
+                check_list.append(match_equality(has_item(has_entries(*mv))) == list(data_record[self.match_col_key]))
             return any(check_list)
 
         if isinstance(match_values[0], list) and isinstance(data_record[self.match_col_key], dict):
