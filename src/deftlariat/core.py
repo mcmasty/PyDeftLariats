@@ -136,17 +136,22 @@ class EqualTo(Matcher):
                 # covered by len ==0 above
                 pass
 
-            elif len(match_values) == 1:
+            elif len(match_values) == 1 and not isinstance(data_record[self.match_col_key], list):
                 q_match_values = pull_val(*match_values)
                 return (match_equality(equal_to(q_match_values))
                         == data_record[self.match_col_key])
 
             else:
                 # has_item will iterate a sequence ...
-                return match_equality(
-                    has_item(equal_to(
-                        data_record[self.match_col_key]))) == [x for x in match_values]
-
+                if isinstance(data_record[self.match_col_key], list):
+                    check_list = []
+                    for dr in data_record[self.match_col_key]:
+                        check_list.append(match_equality(
+                            has_item(equal_to(dr))) == [x for x in match_values])
+                    return any(check_list)
+                else:
+                    return(match_equality(
+                        has_item(equal_to(data_record[self.match_col_key]))) == [x for x in match_values])
         else:
             return (match_equality(equal_to(match_values))
                     == data_record[self.match_col_key])

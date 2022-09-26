@@ -90,6 +90,35 @@ class TestEqualTo(TestCase):
                         "Check boolean does match")
 
 
+    def test_obj(self):
+        class MyObject(object):
+            def __init__(self, something):
+                self.foo = something
+
+            def __eq__(self, other):
+                return self.foo == other.foo
+
+        a = MyObject('cad')
+        test_data_record = {'full_name': [a]}
+        print(test_data_record)
+
+        b = MyObject(None)
+        name_check = EqualTo('full_name')
+        target_value = [b]
+        print(name_check.is_match(target_value, test_data_record))
+        self.assertFalse(name_check.is_match(target_value, test_data_record),
+                         "Check boolean no match")
+
+        target_value = [MyObject('cad'), MyObject('aaa')]
+        print(name_check.is_match(target_value, test_data_record))
+
+
+
+
+
+
+
+
 class TestTextCompareBoundaryCases(TestCase):
     def setUp(self) -> None:
 
