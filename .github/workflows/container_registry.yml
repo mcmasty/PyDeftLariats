@@ -34,7 +34,8 @@ name: Build and publish
 
 on:
   push:
-    branches: ['release', 'master']
+    tags:
+      - 'v*.*.*'
 
 env:
   REGISTRY: ghcr.io
