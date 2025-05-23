@@ -60,6 +60,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/mcmasty/PyDeftLariats',
-    version='1.2.9',
+    version='1.2.10',
     zip_safe=False,
 )
