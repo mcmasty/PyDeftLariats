@@ -7,7 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   deftlariat.entrypoints
+   deftlariat.scripts
 
 Submodules
 ----------
@@ -17,13 +17,13 @@ deftlariat.core module
 
 .. automodule:: deftlariat.core
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: deftlariat
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
