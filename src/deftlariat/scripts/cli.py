@@ -8,10 +8,11 @@ from deftlariat import __version__
 from deftlariat import EqualTo, NumberComparer, MatcherType
 
 
-@click.group()
+@click.group(no_args_is_help=True)
 @click.version_option(version=__version__)
 def deft_cli():
     """Console script for deft lariats."""
+    pass
 
 
 @deft_cli.command()
@@ -29,7 +30,7 @@ zip_code_list = ['']
               default=sys.stdin)
 def example_coingecko(data_file) -> None:
     """
-    Example One. Demonstrate how to use the data filter with a list of dictionaries from
+    Coin Gecko Example. Demonstrate how to use the data filter with a list of dictionaries from
     coingecko.com API. Return records that match any one of three configured filters.
     """
     click.echo("Example One - Data Filter.  \nThis example will search the input list of dictionaries for "

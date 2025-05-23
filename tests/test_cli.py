@@ -28,10 +28,10 @@ class TestSrc(unittest.TestCase):
         runner = CliRunner()
         result = runner.invoke(cli.deft_cli)
         print(result.output)
-        assert result.exit_code == 0
+        assert_that(result.exit_code, equal_to(2))  # Should be SystemExit issue, no command
         assert 'deft lariats' in result.output
         help_result = runner.invoke(cli.deft_cli, ['--help'])
-        assert help_result.exit_code == 0
+        assert_that( help_result.exit_code, equal_to(0))
         assert_that(help_result.output, string_contains_in_order('--version', '--help'))
 
     def test_example_one_with_json_input(self):
@@ -43,7 +43,7 @@ class TestSrc(unittest.TestCase):
             with open('test.json', 'w') as f:
                 f.write('[{"symbol": "OTCMKTS:FRMO", "total_holdings": 2000, "percentage_of_total_supply": 0.2}]')
 
-            result = runner.invoke(cli.deft_cli, ['example-one', '--data-file', 'test.json'], catch_exceptions=False)
+            result = runner.invoke(cli.deft_cli, ['example-coingecko', '--data-file', 'test.json'], catch_exceptions=False)
             print(f"Single JSON output: {result.output}")
             print(f"Exit code: {result.exit_code}")
             if result.exception:
@@ -56,7 +56,7 @@ class TestSrc(unittest.TestCase):
             with open('test.json', 'w') as f:
                 f.write('[{"symbol": "OTCMKTS:FRMO", "total_holdings": 2000, "percentage_of_total_supply": 0.2}]')
 
-            result = runner.invoke(cli.deft_cli, ['example-one', '--data-file', 'test.json'], catch_exceptions=False)
+            result = runner.invoke(cli.deft_cli, ['example-coingecko', '--data-file', 'test.json'], catch_exceptions=False)
             print(f"JSON array output: {result.output}")
             print(f"JSON array exit code: {result.exit_code}")
             if result.exception:
@@ -69,7 +69,7 @@ class TestSrc(unittest.TestCase):
             with open('test.json', 'w') as f:
                 f.write('[{"symbol": "BTC", "total_holdings": 10, "percentage_of_total_supply": 0.01}]')
 
-            result = runner.invoke(cli.deft_cli, ['example-one', '--data-file', 'test.json'], catch_exceptions=False)
+            result = runner.invoke(cli.deft_cli, ['example-coingecko', '--data-file', 'test.json'], catch_exceptions=False)
             print(f"Non-matching JSON output: {result.output}")
             print(f"Non-matching JSON exit code: {result.exit_code}")
             if result.exception:
