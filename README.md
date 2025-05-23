@@ -1,17 +1,8 @@
-# playing with myst  
 
 
-```{warning}  
-This library is under development.
+# playing with MyST  
 
-```
-
-
-
-working my way through this tutorial
-
-
-https://youtu.be/qRSb299awB0
+Thus, visit [https://pydeftlariats.readthedocs.io/](https://pydeftlariats.readthedocs.io/) for more information.
 
 
 
