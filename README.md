@@ -36,7 +36,7 @@ Extract specific records from the Coingecko API using PyDeftLariats.
 - Use jq to extract the record from the Coingecko API and stream to deft
 - `deft` is the command line tool for PyDeftLariats
 
-**Goal**: return all records that match the following criteria:
+**Goal**: return all records that match any of the following criteria:
 - `symbol` is `OTCMKTS:FRMO`
 - `total_holdings` is greater than or equal to `1000`
 - `percentage_of_total_supply` is greater than or equal to `0.1`
