@@ -7,7 +7,7 @@ tag = true
 filename = "VERSION"
 
 [[tool.bumpversion.files]]
-filename = "app/__init__.py"
+filename = "src/__init__.py"
 search = "__version__ = '{current_version}'"
 replace = "__version__ = '{new_version}'"
 
