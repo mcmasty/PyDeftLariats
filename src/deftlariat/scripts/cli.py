@@ -27,7 +27,11 @@ zip_code_list = ['']
               help='file to work with',
               type=click.File('r'),
               default=sys.stdin)
-def example_one(data_file) -> None:
+def example_coingecko(data_file) -> None:
+    """
+    Example One. Demonstrate how to use the data filter with a list of dictionaries from
+    coingecko.com API. Return records that match any one of three configured filters.
+    """
     click.echo("Example One - Data Filter.  \nThis example will search the input list of dictionaries for "
                "records that match any of three filters.\n\n"
                "The three filters are:\n"
