@@ -30,7 +30,7 @@ setup(
     name='PyDeftLariats',
     author="Tyler McMaster",
     author_email='mcmasty@yahoo.com',
-    python_requires='>=3.6',
+    python_requires='>=3.11',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
