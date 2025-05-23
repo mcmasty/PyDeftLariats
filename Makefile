@@ -50,8 +50,8 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
 
-lint: ## check style with flake8
-	flake8 src
+lint: ## check style with ruff
+	ruff check src
 
 test: install ## run tests quickly with the default Python
 	python -m unittest discover

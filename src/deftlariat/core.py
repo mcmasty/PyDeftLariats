@@ -7,8 +7,11 @@ import logging
 from hamcrest import anything, match_equality, equal_to, has_item, starts_with, \
     greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, \
     close_to, contains_string, string_contains_in_order, equal_to_ignoring_case, \
-    equal_to_ignoring_whitespace, not_none, none, any_of, all_of, is_not, is_, \
+    equal_to_ignoring_whitespace, not_none, none, any_of, all_of, is_not, \
     has_entry, has_entries
+
+# TODO: did not utilize the "is_" function from hamcrest
+
 
 from enum import Enum
 
@@ -76,7 +79,7 @@ class Matcher(ABC):
     def __eq__(self, other):
         if other.__class__ is self.__class__:
             return (self.matcher_type, self.match_col_key) == \
-                   (other.matcher_type, other.match_col_key)
+                (other.matcher_type, other.match_col_key)
         else:
             return NotImplemented
 
@@ -150,7 +153,7 @@ class EqualTo(Matcher):
                             has_item(equal_to(dr))) == [x for x in match_values])
                     return any(check_list)
                 else:
-                    return(match_equality(
+                    return (match_equality(
                         has_item(equal_to(data_record[self.match_col_key]))) == [x for x in match_values])
         else:
             return (match_equality(equal_to(match_values))
