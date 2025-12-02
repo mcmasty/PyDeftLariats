@@ -23,7 +23,7 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "click>=8.1.8",
+    "click~=8.2.1",
     "alabaster>=1.0.0",
     "PyHamcrest~=2.1.0",
 ]
@@ -31,7 +31,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pip==25.1.1",
-    "bump-my-version==1.1.4",
+    "bump-my-version~=1.2.4",
     "wheel==0.37.1",
     "watchdog==2.1.9",
     "tox==4.26.0",
