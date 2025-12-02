@@ -25,7 +25,7 @@ requires-python = ">=3.11"
 dependencies = [
     "click>=8.1.8",
     "alabaster>=1.0.0",
-    "PyHamcrest~=2.0.4",
+    "PyHamcrest~=2.1.0",
 ]
 
 [project.optional-dependencies]
