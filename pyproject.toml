@@ -1,6 +1,56 @@
 [build-system]
-requires = ["setuptools >= 65.3.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "PyDeftLariats"
+version = "1.2.11"
+description = "Using PyHamcrest to build a collection of data filters."
+readme = "README.rst"
+license = { text = "GNU General Public License v3" }
+authors = [
+    { name = "Tyler McMaster", email = "mcmasty@yahoo.com" }
+]
+keywords = ["hamcrest", "matchers", "data", "filters"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.1.8",
+    "alabaster>=1.0.0",
+    "PyHamcrest~=2.0.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pip==25.1.1",
+    "bump-my-version==1.1.4",
+    "wheel==0.37.1",
+    "watchdog==2.1.9",
+    "tox==4.26.0",
+    "coverage==7.8.2",
+    "Sphinx==8.2.3",
+    "twine==6.1.0",
+    "sphinxcontrib-mermaid==1.0.0",
+    "ruff==0.11.11",
+    "myst_parser==4.0.1",
+]
+
+[project.scripts]
+deft = "deftlariat.scripts.cli:deft_cli"
+
+[project.urls]
+Homepage = "https://github.com/mcmasty/PyDeftLariats"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/deftlariat"]
 
 [tool.ruff]
 # Exclude the same directories as in your flake8 config
