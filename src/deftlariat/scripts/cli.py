@@ -14,14 +14,7 @@ def deft_cli():
     """Console script for deft lariats."""
     pass
 
-
-@deft_cli.command()
-def hello(name: str) -> None:
-    click.echo(f"Hello {name}")
-
-
 zip_code_list = ['']
-
 
 @deft_cli.command()
 @click.option('--data-file',
