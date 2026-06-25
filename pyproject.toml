@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "PyDeftLariats"
-version = "1.2.11"
+version = "1.2.12"
 description = "Using PyHamcrest to build a collection of data filters."
 readme = "README.rst"
 license = { text = "GNU General Public License v3" }
