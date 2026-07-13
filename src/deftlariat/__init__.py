@@ -4,4 +4,4 @@ from deftlariat.core import *  # noqa F403, F401
 
 __author__ = """Tyler McMaster"""
 __email__ = 'mcmasty@yahoo.com'
-__version__ = '1.2.12'
+__version__ = '2.0.0'
