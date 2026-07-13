@@ -55,9 +55,6 @@ class MatcherType(Enum):
     HAS_ENTRIES = 'HasEntries'
 
 
-# pull values from list...support for list of input parameters and *list syntax
-def pull_val(x: Any) -> Any:
-    return x
 
 
 class Matcher(ABC):
@@ -70,7 +67,7 @@ class Matcher(ABC):
     def __init__(self, match_col_key: str) -> None:
         self.matcher_type = MatcherType.NOTHING
         self.match_col_key = match_col_key
-        self.my_logger = logging.getLogger('matching')
+        self.my_logger = logging.getLogger(__name__)
 
     @abstractmethod
     def is_match(self, match_values: Any, data_record: dict[str, Any]) -> bool:
@@ -80,15 +77,14 @@ class Matcher(ABC):
     def validate_key_exists(self, data_record: dict[str, Any]) -> bool:
         """Validate match-key-column exists in data record."""
         if self.match_col_key not in data_record:
-            self.my_logger.warning(f"'{self.match_col_key}' not present"
-                                    f" in data record \n\n{data_record}. Matcher will return False\n\n")
+            self.my_logger.debug("'%s' not present in data record; matcher will return False", self.match_col_key)
             return False
         else:
             return True
 
-    def get_key_val(self) -> frozenset[str]:
+    def get_key_val(self) -> tuple[str, str]:
         """Generate a value suitable for hashing, dictionary key."""
-        return frozenset((self.matcher_type.value, self.match_col_key))
+        return (self.matcher_type.value, self.match_col_key)
 
     def __repr__(self) -> str:
         return (f'{self.__class__.__name__}('
@@ -156,7 +152,7 @@ class EqualTo(Matcher):
 
         elif isinstance(match_values, list):
             if len(match_values) == 1 and not isinstance(data_record[self.match_col_key], list):
-                q_match_values = pull_val(*match_values)
+                q_match_values = match_values[0]
                 return (match_equality(equal_to(q_match_values))
                         == data_record[self.match_col_key])
 
@@ -221,7 +217,7 @@ class TextComparer(Matcher):
         elif isinstance(match_values, list):
 
             if len(match_values) == 1:
-                q_match_values = pull_val(*match_values)
+                q_match_values = match_values[0]
                 return (match_equality(self.my_matcher(q_match_values))
                         == str(data_record[self.match_col_key]))
             else:
@@ -293,7 +289,7 @@ class NumberComparer(Matcher):
                 raise NotImplementedError(fr"Cannot use {cls_name} to check for "
                                           "empty string. Use None or Not_None.")
             elif len(match_values) == 1:
-                q_match_values = pull_val(*match_values)
+                q_match_values = match_values[0]
                 test_val = self.get_record_value(data_record)
                 return (match_equality(self.my_matcher(q_match_values))
                         == test_val)

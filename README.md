@@ -140,6 +140,10 @@ Full documentation available at [https://pydeftlariats.readthedocs.io/](https://
 
 Contributions welcome! Please read [CONTRIBUTING.rst](CONTRIBUTING.rst) for details.
 
+## Credits
+
+This package was created with [Cookiecutter](https://github.com/audreyr/cookiecutter) and the [audreyr/cookiecutter-pypackage](https://github.com/audreyr/cookiecutter-pypackage) project template.
+
 ## License
 
 GNU General Public License v3 - see [LICENSE](LICENSE) file for details.

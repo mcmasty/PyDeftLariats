@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "PyDeftLariats"
 version = "1.2.12"
 description = "Using PyHamcrest to build a collection of data filters."
-readme = "README.rst"
+readme = "README.md"
 license = { text = "GNU General Public License v3" }
 authors = [
     { name = "Tyler McMaster", email = "mcmasty@yahoo.com" }

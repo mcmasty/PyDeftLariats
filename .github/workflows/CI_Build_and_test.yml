@@ -24,5 +24,7 @@ jobs:
         run: uv run ruff check .
       - name: Type check with pyrefly
         run: uv run pyrefly check src
-      - name: Test with unittest
-        run: uv run python -m unittest discover -s ./tests
+      - name: Test with unittest and coverage
+        run: |
+          uv run coverage run --source=src -m unittest discover -s ./tests
+          uv run coverage report -m

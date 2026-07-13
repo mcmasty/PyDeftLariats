@@ -336,6 +336,13 @@ class TestNumberComparisons(TestCase):
         self.assertFalse(self.number_close_check.is_match((target_value, 1), test_data_record),
                          " 5 close to (10,2) = False")
 
+    def test_none_value_without_replacement(self):
+        # Documents current behavior for None record values when convert_none_to is not set
+        nc = NumberComparer('n', MatcherType.GREATER_THAN)
+        test_data_record = {'n': None}
+        self.assertFalse(nc.is_match(4, test_data_record),
+                        "None value without convert_none_to replacement returns False")
+
 
 class TestNumberComparisonsWithReplacement(TestCase):
 
@@ -425,15 +432,12 @@ class TestMatcher(TestCase):
 
     def test_get_key_value(self):
         abc_matcher = AbstractTestMatcher("some_key_field")
-        print(abc_matcher.get_key_val())
-
-        test_key = frozenset(('some_key_field', MatcherType.NOTHING.value))
+        test_key = (MatcherType.NOTHING.value, 'some_key_field')
         assert_that(abc_matcher.get_key_val(), equal_to(test_key))
 
     def test_str(self):
         abc_matcher = AbstractTestMatcher("some_key_field")
         assert_that("some_key_field", is_in(abc_matcher.__str__()), "Check output")
-        print(abc_matcher.__str__())
 
     def test_match(self):
         abc_matcher = AbstractTestMatcher("some_key_field")
