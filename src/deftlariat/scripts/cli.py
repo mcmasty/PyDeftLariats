@@ -4,7 +4,7 @@ import sys
 
 import click
 
-from deftlariat import EqualTo, MatcherType, NumberComparer, __version__
+from deftlariat import AnyOf, EqualTo, MatcherType, NumberComparer, __version__
 
 
 @click.group(no_args_is_help=True)
@@ -25,7 +25,7 @@ def example_coingecko(data_file) -> None:
     coingecko.com API. Return records that match any one of three configured filters.
     """
     click.echo("Example One - Data Filter.  \nThis example will search the input list of dictionaries for "
-               "records that match any of three filters.\n\n"
+               "records that match any of three filters, combined with the AnyOf combinator.\n\n"
                "The three filters are:\n"
                "1. EqualTo - Check if the value of a the `symbol` field is equal to a target value `OTCMKTS:FRMO`.\n"
                "2. NumberComparer - Check if the value of the `total_holdings` field is greater than or equal to "
@@ -55,15 +55,11 @@ def example_coingecko(data_file) -> None:
             click.echo(f"Error parsing JSON: {e}")
             return
 
-    field_key = 'symbol'
-    filter_one = EqualTo(field_key)
-    target_value = 'OTCMKTS:FRMO'
-
-    filter_two = NumberComparer('total_holdings', MatcherType.GREATER_THAN_EQUAL_TO)
-    filter_three = NumberComparer('percentage_of_total_supply', MatcherType.GREATER_THAN_EQUAL_TO)
+    combined = AnyOf(
+        EqualTo('symbol', 'OTCMKTS:FRMO'),
+        NumberComparer('total_holdings', MatcherType.GREATER_THAN_EQUAL_TO, 1000),
+        NumberComparer('percentage_of_total_supply', MatcherType.GREATER_THAN_EQUAL_TO, 0.1),
+    )
     for x in data:
-        if any([filter_one.is_match(target_value, x),
-                filter_two.is_match(1000, x),
-                filter_three.is_match(0.1, x),
-                ]):
+        if combined.is_match(x):
             click.echo(f"Data Filter hit for record:\n{x}\n\n")

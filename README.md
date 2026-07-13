@@ -58,17 +58,13 @@ how that gets created in code... the Python code for `example-coingecko` fuction
 
 ```python
     ...
-    field_key = 'symbol'
-    filter_one = EqualTo(field_key)
-    target_value = 'OTCMKTS:FRMO'
-
-    filter_two = NumberComparer('total_holdings', MatcherType.GREATER_THAN_EQUAL_TO)
-    filter_three = NumberComparer('percentage_of_total_supply', MatcherType.GREATER_THAN_EQUAL_TO)
+    combined = AnyOf(
+        EqualTo('symbol', 'OTCMKTS:FRMO'),
+        NumberComparer('total_holdings', MatcherType.GREATER_THAN_EQUAL_TO, 1000),
+        NumberComparer('percentage_of_total_supply', MatcherType.GREATER_THAN_EQUAL_TO, 0.1),
+    )
     for x in data:
-        if any([filter_one.is_match(target_value, x),
-                filter_two.is_match(1000, x),
-                filter_three.is_match(0.1, x),
-                ]):
+        if combined.is_match(x):
             click.echo(f"Data Filter hit for record:\n{x}\n\n")
 ```
 
@@ -83,10 +79,24 @@ curl 'https://api.coingecko.com/api/v3/companies/public_treasury/bitcoin' |  jq 
 
 ## Available Matchers
 
+As of 2.0, match values bind at construction time (not at `is_match()` call
+time), and every matcher exposes the same call signature:
+`matcher.is_match(data_record)`.
+
 ### Basic Matchers
 - **EqualTo** - Exact equality matching (supports lists)
+  ```python
+  EqualTo('symbol', 'OTCMKTS:FRMO').is_match(record)
+  EqualTo('symbol', ['OTCMKTS:FRMO', 'NASDAQ:MOGO']).is_match(record)
+  ```
 - **AnythingMatcher** - Always matches (useful for testing)
+  ```python
+  AnythingMatcher('symbol').is_match(record)
+  ```
 - **NothingMatcher** - Never matches (default/fallback)
+  ```python
+  NothingMatcher('symbol').is_match(record)
+  ```
 
 ### Text Matchers (TextComparer)
 - **STARTS_WITH** - String prefix matching
@@ -94,6 +104,9 @@ curl 'https://api.coingecko.com/api/v3/companies/public_treasury/bitcoin' |  jq 
 - **CONTAINS_STRING_IN_ORDER** - Multiple substrings in order
 - **EQUAL_TO_IGNORE_CASE** - Case-insensitive equality
 - **EQUAL_TO_IGNORE_WHITESPACE** - Whitespace-insensitive equality
+  ```python
+  TextComparer('symbol', MatcherType.STARTS_WITH, 'OTCMKTS').is_match(record)
+  ```
 
 ### Number Matchers (NumberComparer)
 - **GREATER_THAN** - Numeric comparison >
@@ -101,16 +114,39 @@ curl 'https://api.coingecko.com/api/v3/companies/public_treasury/bitcoin' |  jq 
 - **LESS_THAN** - Numeric comparison <
 - **LESS_THAN_EQUAL_TO** - Numeric comparison ≤
 - **CLOSE_TO** - Approximate equality with delta
+  ```python
+  NumberComparer('total_holdings', MatcherType.GREATER_THAN_EQUAL_TO, 1000).is_match(record)
+  NumberComparer('total_holdings', MatcherType.CLOSE_TO, (1000, 5)).is_match(record)
+  ```
 
 ### Existence Matchers (ExistsMatchers)
 - **NONE** - Field is None
 - **NOT_NONE** - Field is not None
 - **NONE_OR_EMPTY** - Field is None or empty ([], {}, '', ())
 - **NOT_NONE_OR_EMPTY** - Field has a value
+  ```python
+  ExistsMatchers('total_holdings', MatcherType.NOT_NONE_OR_EMPTY).is_match(record)
+  ```
 
 ### Dictionary Matchers (DictMatchers)
 - **HAS_ENTRY** - Dictionary contains specific key-value pair
 - **HAS_ENTRIES** - Dictionary contains multiple key-value pairs
+  ```python
+  DictMatchers('skills', MatcherType.HAS_ENTRIES, 'identifier', 'Trumpet').is_match(record)
+  ```
+
+### Combinators
+- **AnyOf** - Logical OR over one or more `DataFilter`s
+- **AllOf** - Logical AND over one or more `DataFilter`s
+- **Not** - Negates a single `DataFilter`
+
+```python
+combined = AnyOf(
+    EqualTo('symbol', 'OTCMKTS:FRMO'),
+    NumberComparer('total_holdings', MatcherType.GREATER_THAN_EQUAL_TO, 1000),
+)
+combined.is_match(record)
+```
 
 ---
 

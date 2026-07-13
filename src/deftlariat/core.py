@@ -32,6 +32,22 @@ from hamcrest import (
 )
 from hamcrest.core.matcher import Matcher as HamcrestMatcher
 
+__all__ = [
+    "MatcherType",
+    "DataFilter",
+    "Matcher",
+    "NothingMatcher",
+    "AnythingMatcher",
+    "EqualTo",
+    "TextComparer",
+    "NumberComparer",
+    "ExistsMatchers",
+    "DictMatchers",
+    "AnyOf",
+    "AllOf",
+    "Not",
+]
+
 
 class MatcherType(Enum):
     NOTHING = 'Nothing'
@@ -55,23 +71,35 @@ class MatcherType(Enum):
     HAS_ENTRIES = 'HasEntries'
 
 
+class DataFilter(ABC):
+    """Anything that can decide whether a data record matches."""
+
+    @abstractmethod
+    def is_match(self, data_record: dict[str, Any]) -> bool:
+        """Check if the data record matches."""
+        pass
 
 
-class Matcher(ABC):
-    """Abstract base class for all matchers."""
+class Matcher(DataFilter):
+    """Abstract base class for all field-key matchers."""
 
     matcher_type: MatcherType
     match_col_key: str
     my_logger: logging.Logger
+    match_values: Any
 
     def __init__(self, match_col_key: str) -> None:
         self.matcher_type = MatcherType.NOTHING
         self.match_col_key = match_col_key
         self.my_logger = logging.getLogger(__name__)
+        # Concrete subclasses that bind values at construction time will
+        # overwrite this; matchers with no bound values (e.g. ExistsMatchers,
+        # AnythingMatcher, NothingMatcher) leave it as None.
+        self.match_values = None
 
     @abstractmethod
-    def is_match(self, match_values: Any, data_record: dict[str, Any]) -> bool:
-        """Check if the data record matches the given values."""
+    def is_match(self, data_record: dict[str, Any]) -> bool:
+        """Check if the data record matches the bound match values."""
         pass
 
     def validate_key_exists(self, data_record: dict[str, Any]) -> bool:
@@ -96,11 +124,15 @@ class Matcher(ABC):
 
     def __eq__(self, other: object) -> bool:
         if other.__class__ is self.__class__:
-            return (self.matcher_type, self.match_col_key) == \
-                (other.matcher_type, other.match_col_key)  # type: ignore
+            return (self.matcher_type, self.match_col_key, self.match_values) == \
+                (other.matcher_type, other.match_col_key, other.match_values)  # type: ignore
         else:
             return NotImplemented
 
+    # Hash intentionally ignores match_values: it's a coarser key than
+    # equality (class, matcher_type, match_col_key), but that's fine for
+    # the hash/eq contract -- objects that are __eq__ always share this
+    # same subset of fields, so equal objects still hash equal.
     def __hash__(self) -> int:
         return hash((self.__class__, self.matcher_type, self.match_col_key))
 
@@ -110,10 +142,9 @@ class NothingMatcher(Matcher):
 
     def __init__(self, match_col_key: str) -> None:
         super().__init__(match_col_key)
-        self.match_col_key = match_col_key
         self.matcher_type = MatcherType.NOTHING
 
-    def is_match(self, match_values: Any, data_record: dict[str, Any]) -> bool:
+    def is_match(self, data_record: dict[str, Any]) -> bool:
         self.my_logger.info("No Matcher set, defaults to Nothing Matcher. Always False.")
         return False
 
@@ -125,32 +156,34 @@ class AnythingMatcher(Matcher):
 
     def __init__(self, match_col_key: str) -> None:
         super().__init__(match_col_key)
-        self.match_col_key = match_col_key
         self.matcher_type = MatcherType.ANYTHING
         self.my_matcher = anything(f"Anything for {match_col_key}")
 
-    def is_match(self, match_values: Any, data_record: dict[str, Any]) -> bool:
+    def is_match(self, data_record: dict[str, Any]) -> bool:
         return match_equality(self.my_matcher) == data_record
 
 
 class EqualTo(Matcher):
     """Equal To matching style. Cast everything to str."""
 
-    def __init__(self, match_col_key: str) -> None:
+    def __init__(self, match_col_key: str, match_values: Any) -> None:
         super().__init__(match_col_key)
-        self.match_col_key = match_col_key
         self.matcher_type = MatcherType.EQUAL_TO
 
-    def is_match(self, match_values: Any, data_record: dict[str, Any]) -> bool:
+        if isinstance(match_values, list | tuple | str | dict | set) and len(match_values) == 0:
+            self.my_logger.warning("No Match Values provided, raising Error")
+            raise ValueError("Cannot use Equal To to check for empty "
+                              "string. Use None or Not_None.")
+
+        self.match_values = match_values
+
+    def is_match(self, data_record: dict[str, Any]) -> bool:
         if not self.validate_key_exists(data_record):
             return False
 
-        if len(match_values) == 0:
-            self.my_logger.warning("No Match Values provided, raising Error")
-            raise NotImplementedError("Cannot use Equal To to check for empty "
-                                      "string. Use None or Not_None.")
+        match_values = self.match_values
 
-        elif isinstance(match_values, list):
+        if isinstance(match_values, list):
             if len(match_values) == 1 and not isinstance(data_record[self.match_col_key], list):
                 q_match_values = match_values[0]
                 return (match_equality(equal_to(q_match_values))
@@ -177,44 +210,38 @@ class TextComparer(Matcher):
 
     my_matcher: Callable[..., HamcrestMatcher[Any]]
 
-    def __init__(self, match_col_key: str, matcher_type: MatcherType) -> None:
+    _MATCHER_FUNCS: dict[MatcherType, Callable[..., HamcrestMatcher[Any]]] = {
+        MatcherType.STARTS_WITH: starts_with,
+        MatcherType.CONTAINS_STRING: contains_string,
+        MatcherType.CONTAINS_STRING_IN_ORDER: string_contains_in_order,
+        MatcherType.EQUAL_TO_IGNORE_CASE: equal_to_ignoring_case,
+        MatcherType.EQUAL_TO_IGNORE_WHITESPACE: equal_to_ignoring_whitespace,
+    }
+
+    def __init__(self, match_col_key: str, matcher_type: MatcherType, match_values: Any) -> None:
         super().__init__(match_col_key)
-        self.match_col_key = match_col_key
 
-        if matcher_type == MatcherType.STARTS_WITH:
-            self.matcher_type = MatcherType.STARTS_WITH
-            self.my_matcher = starts_with
-
-        elif matcher_type == MatcherType.CONTAINS_STRING:
-            self.matcher_type = MatcherType.CONTAINS_STRING
-            self.my_matcher = contains_string
-
-        elif matcher_type == MatcherType.CONTAINS_STRING_IN_ORDER:
-            self.matcher_type = MatcherType.CONTAINS_STRING_IN_ORDER
-            self.my_matcher = string_contains_in_order
-
-        elif matcher_type == MatcherType.EQUAL_TO_IGNORE_CASE:
-            self.matcher_type = MatcherType.EQUAL_TO_IGNORE_CASE
-            self.my_matcher = equal_to_ignoring_case
-
-        elif matcher_type == MatcherType.EQUAL_TO_IGNORE_WHITESPACE:
-            self.matcher_type = MatcherType.EQUAL_TO_IGNORE_WHITESPACE
-            self.my_matcher = equal_to_ignoring_whitespace
-
-        else:
+        my_matcher = self._MATCHER_FUNCS.get(matcher_type)
+        if my_matcher is None:
             raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
+        self.matcher_type = matcher_type
+        self.my_matcher = my_matcher
 
-    def is_match(self, match_values: Any, data_record: dict[str, Any]) -> bool:
+        if isinstance(match_values, list | tuple | str | dict | set) and len(match_values) == 0:
+            self.my_logger.warning("No Match Values provided, raising Error")
+            raise ValueError(f"Cannot use {self.matcher_type.value} to check for "
+                              "empty string. Use None or Not_None.")
+
+        self.match_values = match_values
+
+    def is_match(self, data_record: dict[str, Any]) -> bool:
 
         if not self.validate_key_exists(data_record):
             return False
 
-        if len(match_values) == 0:
-            self.my_logger.warning("No Match Values provided, raising Error")
-            raise NotImplementedError(f"Cannot use {self.matcher_type.value} to check for "
-                                      "empty string. Use None or Not_None.")
+        match_values = self.match_values
 
-        elif isinstance(match_values, list):
+        if isinstance(match_values, list):
 
             if len(match_values) == 1:
                 q_match_values = match_values[0]
@@ -226,7 +253,7 @@ class TextComparer(Matcher):
                                 == str(data_record[self.match_col_key])]
                 return len(matches_list) > 0
         else:
-            return (match_equality(self.my_matcher(match_values))
+            return (match_equality(self.my_matcher(str(match_values)))
                     == str(data_record[self.match_col_key]))
 
 
@@ -237,10 +264,17 @@ class NumberComparer(Matcher):
     convert_none: bool
     replacement_val: int | float | None
 
-    def __init__(self, match_col_key: str, matcher_type: MatcherType,
+    _MATCHER_FUNCS: dict[MatcherType, Callable[..., HamcrestMatcher[Any]]] = {
+        MatcherType.GREATER_THAN: greater_than,
+        MatcherType.GREATER_THAN_EQUAL_TO: greater_than_or_equal_to,
+        MatcherType.LESS_THAN: less_than,
+        MatcherType.LESS_THAN_EQUAL_TO: less_than_or_equal_to,
+        MatcherType.CLOSE_TO: close_to,
+    }
+
+    def __init__(self, match_col_key: str, matcher_type: MatcherType, match_values: Any,
                  convert_none_to: int | float | None = None) -> None:
         super().__init__(match_col_key)
-        self.match_col_key = match_col_key
         self.replacement_val = None
         if convert_none_to is None:
             self.convert_none = False
@@ -248,27 +282,37 @@ class NumberComparer(Matcher):
             self.convert_none = True
             self.replacement_val = convert_none_to
 
-        if matcher_type == MatcherType.GREATER_THAN:
-            self.matcher_type = MatcherType.GREATER_THAN
-            self.my_matcher = greater_than
-
-        elif matcher_type == MatcherType.GREATER_THAN_EQUAL_TO:
-            self.matcher_type = MatcherType.GREATER_THAN_EQUAL_TO
-            self.my_matcher = greater_than_or_equal_to
-
-        elif matcher_type == MatcherType.LESS_THAN:
-            self.matcher_type = MatcherType.LESS_THAN
-            self.my_matcher = less_than
-
-        elif matcher_type == MatcherType.LESS_THAN_EQUAL_TO:
-            self.matcher_type = MatcherType.LESS_THAN_EQUAL_TO
-            self.my_matcher = less_than_or_equal_to
-
-        elif matcher_type == MatcherType.CLOSE_TO:
-            self.matcher_type = MatcherType.CLOSE_TO
-            self.my_matcher = close_to
-        else:
+        my_matcher = self._MATCHER_FUNCS.get(matcher_type)
+        if my_matcher is None:
             raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
+        self.matcher_type = matcher_type
+        self.my_matcher = my_matcher
+
+        cls_name = self.__class__.__name__
+
+        # Special validation for CLOSE_TO: must be a (value, delta) pair
+        if matcher_type == MatcherType.CLOSE_TO:
+            if isinstance(match_values, list | tuple):
+                if len(match_values) != 2:
+                    raise ValueError("CLOSE_TO requires a (value, delta) pair")
+                # Normalize to tuple
+                match_values = tuple(match_values)
+            else:
+                raise ValueError("CLOSE_TO requires a (value, delta) pair")
+            self.match_values = match_values
+        elif isinstance(match_values, list):
+            if len(match_values) == 0:
+                self.my_logger.warning("No Match Values provided, raising Error")
+                raise ValueError(fr"Cannot use {cls_name} to check for "
+                                  "empty string. Use None or Not_None.")
+            elif len(match_values) == 1:
+                match_values = match_values[0]
+            else:
+                raise ValueError(fr"Cannot use {cls_name} to check "
+                                  " a list of values")
+            self.match_values = match_values
+        else:
+            self.match_values = match_values
 
     def get_record_value(self, data_record: dict[str, Any]) -> int | float:
         """If you want to convert a None to an Int, set a replacement value."""
@@ -278,36 +322,31 @@ class NumberComparer(Matcher):
             return_val = data_record[self.match_col_key]
         return return_val  # type: ignore
 
-    def is_match(self, match_values: Any, data_record: dict[str, Any]) -> bool:
+    def is_match(self, data_record: dict[str, Any]) -> bool:
         if not self.validate_key_exists(data_record):
             return False
 
-        if isinstance(match_values, list):
-            if len(match_values) == 0:
-                self.my_logger.warning("No Match Values provided, raising Error")
-                cls_name = self.__class__.__name__
-                raise NotImplementedError(fr"Cannot use {cls_name} to check for "
-                                          "empty string. Use None or Not_None.")
-            elif len(match_values) == 1:
-                q_match_values = match_values[0]
-                test_val = self.get_record_value(data_record)
-                return (match_equality(self.my_matcher(q_match_values))
-                        == test_val)
-            else:
-                cls_name = self.__class__.__name__
-                raise NotImplementedError(fr"Cannot use {cls_name} to check "
-                                          " a list of values")
-        else:
+        test_val = self.get_record_value(data_record)
 
-            if self.matcher_type == MatcherType.CLOSE_TO:
-                # Expect a tuple for Close To for Num, Delta...so unpack values
-                test_val = self.get_record_value(data_record)
-                return (match_equality(self.my_matcher(*match_values))
-                        == test_val)
-            else:
-                test_val = self.get_record_value(data_record)
-                return (match_equality(self.my_matcher(match_values))
-                        == test_val)
+        if self.matcher_type == MatcherType.CLOSE_TO:
+            # Expect a tuple for Close To for Num, Delta...so unpack values
+            return (match_equality(self.my_matcher(*self.match_values))
+                    == test_val)
+        else:
+            return (match_equality(self.my_matcher(self.match_values))
+                    == test_val)
+
+    def __eq__(self, other: object) -> bool:
+        if other.__class__ is self.__class__:
+            return ((self.matcher_type, self.match_col_key, self.match_values,
+                     self.convert_none, self.replacement_val) ==
+                    (other.matcher_type, other.match_col_key, other.match_values,  # type: ignore
+                     other.convert_none, other.replacement_val))  # type: ignore
+        else:
+            return NotImplemented
+
+    # Inherit hash from Matcher to avoid breaking the hash/eq contract
+    __hash__ = Matcher.__hash__
 
 
 class ExistsMatchers(Matcher):
@@ -315,22 +354,23 @@ class ExistsMatchers(Matcher):
 
     my_matcher: Callable[..., HamcrestMatcher[Any]]
 
+    _MATCHER_FUNCS: dict[MatcherType, Callable[..., HamcrestMatcher[Any]]] = {
+        MatcherType.NONE: none,
+        MatcherType.NONE_OR_EMPTY: none,
+        MatcherType.NOT_NONE: not_none,
+        MatcherType.NOT_NONE_OR_EMPTY: not_none,
+    }
+
     def __init__(self, match_col_key: str, matcher_type: MatcherType) -> None:
         super().__init__(match_col_key)
-        self.match_col_key = match_col_key
 
-        if matcher_type in (MatcherType.NONE, MatcherType.NONE_OR_EMPTY):
-            self.matcher_type = MatcherType(matcher_type)
-            self.my_matcher = none
-
-        elif matcher_type in (MatcherType.NOT_NONE, MatcherType.NOT_NONE_OR_EMPTY):
-            self.matcher_type = MatcherType(matcher_type)
-            self.my_matcher = not_none
-
-        else:
+        my_matcher = self._MATCHER_FUNCS.get(matcher_type)
+        if my_matcher is None:
             raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
+        self.matcher_type = matcher_type
+        self.my_matcher = my_matcher
 
-    def is_match(self, data_record: dict[str, Any]) -> bool:  # type: ignore[override]
+    def is_match(self, data_record: dict[str, Any]) -> bool:
 
         if not self.validate_key_exists(data_record):
             return False
@@ -363,22 +403,29 @@ class DictMatchers(Matcher):
 
     my_matcher: Callable[..., HamcrestMatcher[Any]]
 
-    def __init__(self, match_col_key: str, matcher_type: MatcherType) -> None:
+    _MATCHER_FUNCS: dict[MatcherType, Callable[..., HamcrestMatcher[Any]]] = {
+        MatcherType.HAS_ENTRY: has_entry,
+        MatcherType.HAS_ENTRIES: has_entries,
+    }
+
+    def __init__(self, match_col_key: str, matcher_type: MatcherType, *match_values: Any) -> None:
         super().__init__(match_col_key)
-        self.match_col_key = match_col_key
 
-        if matcher_type == MatcherType.HAS_ENTRY:
-            self.matcher_type = MatcherType(matcher_type)
-            self.my_matcher = has_entry
-
-        elif matcher_type == MatcherType.HAS_ENTRIES:
-            self.matcher_type = MatcherType(matcher_type)
-            self.my_matcher = has_entries
-
-        else:
+        my_matcher = self._MATCHER_FUNCS.get(matcher_type)
+        if my_matcher is None:
             raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
+        self.matcher_type = matcher_type
+        self.my_matcher = my_matcher
 
-    def is_match(self, *match_values: Any, data_record: dict[str, Any]) -> bool:  # type: ignore[override]
+        if len(match_values) == 0:
+            raise ValueError("DictMatchers requires at least one match value")
+
+        if self.matcher_type == MatcherType.HAS_ENTRY and len(match_values) > 2:
+            raise ValueError("HAS_ENTRY matcher only accepts two values")
+
+        self.match_values = match_values
+
+    def is_match(self, data_record: dict[str, Any]) -> bool:
         if not self.validate_key_exists(data_record):
             return False
 
@@ -386,8 +433,7 @@ class DictMatchers(Matcher):
             """ If record is None or empty, no match"""
             return False
 
-        if self.matcher_type == MatcherType.HAS_ENTRY and len(match_values) > 2:
-            raise ValueError("HAS_ENTRY matcher only accepts two values")
+        match_values = self.match_values
 
         if isinstance(match_values[0], list) and isinstance(data_record[self.match_col_key], list):
             """ Two lists... """
@@ -421,3 +467,78 @@ class DictMatchers(Matcher):
 
         return (match_equality(self.my_matcher(*match_values))
                 == data_record[self.match_col_key])
+
+
+class AnyOf(DataFilter):
+    """Logical OR combinator: matches if any child filter matches."""
+
+    filters: tuple[DataFilter, ...]
+
+    def __init__(self, *filters: DataFilter) -> None:
+        if len(filters) == 0:
+            raise ValueError("AnyOf requires at least one filter")
+        self.filters = filters
+
+    def is_match(self, data_record: dict[str, Any]) -> bool:
+        return any(f.is_match(data_record) for f in self.filters)
+
+    def __repr__(self) -> str:
+        inner = ', '.join(repr(f) for f in self.filters)
+        return f'{self.__class__.__name__}({inner})'
+
+    def __eq__(self, other: object) -> bool:
+        if other.__class__ is self.__class__:
+            return self.filters == other.filters  # type: ignore
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash((self.__class__, self.filters))
+
+
+class AllOf(DataFilter):
+    """Logical AND combinator: matches only if every child filter matches."""
+
+    filters: tuple[DataFilter, ...]
+
+    def __init__(self, *filters: DataFilter) -> None:
+        if len(filters) == 0:
+            raise ValueError("AllOf requires at least one filter")
+        self.filters = filters
+
+    def is_match(self, data_record: dict[str, Any]) -> bool:
+        return all(f.is_match(data_record) for f in self.filters)
+
+    def __repr__(self) -> str:
+        inner = ', '.join(repr(f) for f in self.filters)
+        return f'{self.__class__.__name__}({inner})'
+
+    def __eq__(self, other: object) -> bool:
+        if other.__class__ is self.__class__:
+            return self.filters == other.filters  # type: ignore
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash((self.__class__, self.filters))
+
+
+class Not(DataFilter):
+    """Negation combinator: inverts the result of a single child filter."""
+
+    filters: tuple[DataFilter]
+
+    def __init__(self, data_filter: DataFilter) -> None:
+        self.filters = (data_filter,)
+
+    def is_match(self, data_record: dict[str, Any]) -> bool:
+        return not self.filters[0].is_match(data_record)
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.filters[0]!r})'
+
+    def __eq__(self, other: object) -> bool:
+        if other.__class__ is self.__class__:
+            return self.filters == other.filters  # type: ignore
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash((self.__class__, self.filters))

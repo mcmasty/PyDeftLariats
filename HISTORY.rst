@@ -32,3 +32,24 @@ History
 * CI updated to uv with Python 3.11-3.13
 * Docs and badges refreshed
 
+2.0.0 (2026-07-13)
+-------------------
+* **Breaking:** Match values now bind at construction time instead of being
+  passed to ``is_match()``. E.g. ``EqualTo('symbol', 'OTCMKTS:FRMO').is_match(record)``
+  instead of ``EqualTo('symbol').is_match('OTCMKTS:FRMO', record)``.
+* **Breaking:** Every matcher now implements a uniform
+  ``is_match(self, data_record: dict[str, Any]) -> bool`` signature. The
+  ``# type: ignore[override]`` escapes previously needed for ``ExistsMatchers``
+  and ``DictMatchers`` are gone.
+* **Breaking:** Invalid input values (empty match values, an unsupported
+  multi-element list for ``NumberComparer``) now raise ``ValueError`` at
+  construction time instead of ``NotImplementedError`` at match time.
+  Unsupported ``MatcherType`` values still raise ``NotImplementedError``,
+  now at construction time.
+* Added ``DataFilter`` abstract base class; ``Matcher`` now extends it.
+* Added ``AnyOf``, ``AllOf``, and ``Not`` combinators for composing filters
+  (logical OR, AND, and negation).
+* Added explicit ``__all__`` to ``deftlariat.core``.
+* ``Matcher.__eq__`` now also compares bound ``match_values``.
+* Removed the no-op ``pull_val()`` indirection.
+
