@@ -1,7 +1,17 @@
 from unittest import TestCase
+
 from hamcrest import *
-from deftlariat import AnythingMatcher, EqualTo, \
-    Matcher, MatcherType, NumberComparer, TextComparer, ExistsMatchers, DictMatchers
+
+from deftlariat import (
+    AnythingMatcher,
+    DictMatchers,
+    EqualTo,
+    ExistsMatchers,
+    Matcher,
+    MatcherType,
+    NumberComparer,
+    TextComparer,
+)
 
 
 class TestAnythingMatcher(TestCase):
@@ -10,7 +20,7 @@ class TestAnythingMatcher(TestCase):
 
     def test_record_is_match(self):
         a_matcher = AnythingMatcher("full_record")
-        test_data = dict()
+        test_data = {}
         assert_that(a_matcher.is_match('full_record', test_data), equal_to(True))
 
         test_obj = object()
@@ -91,7 +101,7 @@ class TestEqualTo(TestCase):
 
 
     def test_obj(self):
-        class MyObject(object):
+        class MyObject:
             def __init__(self, something):
                 self.foo = something
 
@@ -100,21 +110,16 @@ class TestEqualTo(TestCase):
 
         a = MyObject('cad')
         test_data_record = {'full_name': [a]}
-        print(test_data_record)
 
         b = MyObject(None)
         name_check = EqualTo('full_name')
         target_value = [b]
-        print(name_check.is_match(target_value, test_data_record))
         self.assertFalse(name_check.is_match(target_value, test_data_record),
                          "Check boolean no match")
 
         target_value = [MyObject('cad'), MyObject('aaa')]
-        print(name_check.is_match(target_value, test_data_record))
-
-
-
-
+        self.assertTrue(name_check.is_match(target_value, test_data_record),
+                        "One of the target objects ('cad') matches the data record")
 
 
 
@@ -127,7 +132,7 @@ class TestTextCompareBoundaryCases(TestCase):
                               MatcherType.EQUAL_TO_IGNORE_WHITESPACE,
                               MatcherType.EQUAL_TO_IGNORE_CASE]
 
-        self.my_text_comparer_list = list()
+        self.my_text_comparer_list = []
         for type in text_matcher_types:
             self.my_text_comparer_list.append(TextComparer('text_col', type))
 
@@ -443,7 +448,7 @@ class TestNumberMatcherBoundaryCases(TestCase):
                                 MatcherType.LESS_THAN, MatcherType.LESS_THAN_EQUAL_TO,
                                 MatcherType.CLOSE_TO]
 
-        self.my_number_comparere_list = list()
+        self.my_number_comparere_list = []
         for m_type in number_matcher_types:
             self.my_number_comparere_list.append(NumberComparer('number_col', m_type))
 
@@ -483,7 +488,7 @@ class TestExistenceMatcherBoundaryCases(TestCase):
         exists_matcher_types = [MatcherType.NONE, MatcherType.NONE_OR_EMPTY,
                                 MatcherType.NOT_NONE, MatcherType.NOT_NONE_OR_EMPTY]
 
-        self.my_exists_comparer_list = list()
+        self.my_exists_comparer_list = []
         for m_type in exists_matcher_types:
             self.my_exists_comparer_list.append(ExistsMatchers('number_col', m_type))
 
@@ -491,8 +496,6 @@ class TestExistenceMatcherBoundaryCases(TestCase):
         test_data_record = {'some_other_columns': 11223344}
 
         for comparer in self.my_exists_comparer_list:
-            target_value = []
-
             assert_that(comparer.is_match(test_data_record),
                         equal_to(False), "Return False when field not available.")
 
@@ -699,7 +702,23 @@ class TestDictMatchers(TestCase):
                                           data_record={'dumb': {'c': 'd', 'a': 'b'}}),
                         equal_to(True))
 
-    def test_this(self):
-        target_skills = [{'id': '61d8923376841a071b5fb398', 'identifier': 'Alto Sax'}, {'id': '61d8923376841a071b5fb39a', 'identifier': 'Tenor Sax'}, {'id': '61d8923376841a071b5fb39c', 'identifier': 'Bari Sax'}, {'id': '61d8923376841a071b5fb39e', 'identifier': 'Trumpet'}, {'id': '61d8923376841a071b5fb3a0', 'identifier': 'Trombone'}, {'id': '6223aa9d10a7d3001e006f66', 'identifier': '2nd Trumpet'}]
+    def test_has_entries_skill_records(self):
+        target_skills = [
+            {'id': '61d8923376841a071b5fb398', 'identifier': 'Alto Sax'},
+            {'id': '61d8923376841a071b5fb39a', 'identifier': 'Tenor Sax'},
+            {'id': '61d8923376841a071b5fb39c', 'identifier': 'Bari Sax'},
+            {'id': '61d8923376841a071b5fb39e', 'identifier': 'Trumpet'},
+            {'id': '61d8923376841a071b5fb3a0', 'identifier': 'Trombone'},
+            {'id': '6223aa9d10a7d3001e006f66', 'identifier': '2nd Trumpet'},
+        ]
 
+        operator = DictMatchers('skills', MatcherType.HAS_ENTRIES)
+
+        assert_that(operator.is_match('identifier', 'Trumpet',
+                                      data_record={'skills': target_skills}),
+                    equal_to(True))
+
+        assert_that(operator.is_match('identifier', 'Violin',
+                                      data_record={'skills': target_skills}),
+                    equal_to(False))
 

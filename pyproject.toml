@@ -61,12 +61,15 @@ exclude = ["docs"]
 line-length = 127
 
 [tool.ruff.lint]
-# Enable flake8-equivalent rules
-select = ["E", "F"]
+# Enable pragmatic ruleset
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "C4"]
 # Allow autofix for all enabled rules (when using `ruff --fix`)
 fixable = ["ALL"]
 # Allow unused variables when underscore-prefixed
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["F403", "F405"]  # tests use hamcrest star imports intentionally
 
 [tool.pyrefly]
 # Pyrefly configuration (Rust-based type checker - faster than pyright/mypy)

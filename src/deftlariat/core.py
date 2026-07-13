@@ -1,21 +1,36 @@
 """Main module."""
 from __future__ import annotations
 
-__version__ = '0.0.1'
-
-from abc import ABC, abstractmethod
-from enum import Enum
 import logging
-from typing import Any, Callable
+from abc import ABC, abstractmethod
+from collections.abc import Callable
+from enum import Enum
+from typing import Any
 
-from hamcrest import anything, match_equality, equal_to, has_item, starts_with, \
-    greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, \
-    close_to, contains_string, string_contains_in_order, equal_to_ignoring_case, \
-    equal_to_ignoring_whitespace, not_none, none, any_of, all_of, is_not, \
-    has_entry, has_entries
+from hamcrest import (
+    all_of,
+    any_of,
+    anything,
+    close_to,
+    contains_string,
+    equal_to,
+    equal_to_ignoring_case,
+    equal_to_ignoring_whitespace,
+    greater_than,
+    greater_than_or_equal_to,
+    has_entries,
+    has_entry,
+    has_item,
+    is_not,
+    less_than,
+    less_than_or_equal_to,
+    match_equality,
+    none,
+    not_none,
+    starts_with,
+    string_contains_in_order,
+)
 from hamcrest.core.matcher import Matcher as HamcrestMatcher
-
-# TODO: did not utilize the "is_" function from hamcrest
 
 
 class MatcherType(Enum):
@@ -65,8 +80,8 @@ class Matcher(ABC):
     def validate_key_exists(self, data_record: dict[str, Any]) -> bool:
         """Validate match-key-column exists in data record."""
         if self.match_col_key not in data_record:
-            self.my_logger.warning((f"'{self.match_col_key}' not present"
-                                    f" in data record \n\n{data_record}. Matcher will return False\n\n"))
+            self.my_logger.warning(f"'{self.match_col_key}' not present"
+                                    f" in data record \n\n{data_record}. Matcher will return False\n\n")
             return False
         else:
             return True
@@ -140,11 +155,7 @@ class EqualTo(Matcher):
                                       "string. Use None or Not_None.")
 
         elif isinstance(match_values, list):
-            if len(match_values) == 0:
-                # covered by len ==0 above
-                pass
-
-            elif len(match_values) == 1 and not isinstance(data_record[self.match_col_key], list):
+            if len(match_values) == 1 and not isinstance(data_record[self.match_col_key], list):
                 q_match_values = pull_val(*match_values)
                 return (match_equality(equal_to(q_match_values))
                         == data_record[self.match_col_key])
@@ -155,11 +166,11 @@ class EqualTo(Matcher):
                     check_list = []
                     for dr in data_record[self.match_col_key]:
                         check_list.append(match_equality(
-                            has_item(equal_to(dr))) == [x for x in match_values])
+                            has_item(equal_to(dr))) == list(match_values))
                     return any(check_list)
                 else:
                     return (match_equality(
-                        has_item(equal_to(data_record[self.match_col_key]))) == [x for x in match_values])
+                        has_item(equal_to(data_record[self.match_col_key]))) == list(match_values))
         else:
             return (match_equality(equal_to(match_values))
                     == data_record[self.match_col_key])
@@ -217,10 +228,7 @@ class TextComparer(Matcher):
                 matches_list = [q for q in match_values
                                 if match_equality(self.my_matcher(q))
                                 == str(data_record[self.match_col_key])]
-                if len(matches_list) > 0:
-                    return True
-                else:
-                    return False
+                return len(matches_list) > 0
         else:
             return (match_equality(self.my_matcher(match_values))
                     == str(data_record[self.match_col_key]))

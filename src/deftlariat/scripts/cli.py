@@ -1,11 +1,10 @@
-"""Console script for src."""
-import sys
+"""Console script for PyDeftLariats."""
 import json
+import sys
 
 import click
 
-from deftlariat import __version__
-from deftlariat import EqualTo, NumberComparer, MatcherType
+from deftlariat import EqualTo, MatcherType, NumberComparer, __version__
 
 
 @click.group(no_args_is_help=True)
@@ -14,7 +13,6 @@ def deft_cli():
     """Console script for deft lariats."""
     pass
 
-zip_code_list = ['']
 
 @deft_cli.command()
 @click.option('--data-file',
@@ -57,7 +55,6 @@ def example_coingecko(data_file) -> None:
             click.echo(f"Error parsing JSON: {e}")
             return
 
-    # TODO: Assume stream is a json list
     field_key = 'symbol'
     filter_one = EqualTo(field_key)
     target_value = 'OTCMKTS:FRMO'

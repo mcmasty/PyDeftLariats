@@ -25,3 +25,10 @@ History
 ------------------
 * Added options to convert None to int value for numeric comparisons
 
+1.2.12 (2026-07-13)
+-------------------
+* Migrated packaging to uv + hatchling (PEP 621)
+* Added type hints and pyrefly type checking
+* CI updated to uv with Python 3.11-3.13
+* Docs and badges refreshed
+

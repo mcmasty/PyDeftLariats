@@ -1,27 +1,24 @@
 #!/usr/bin/env python
 
-"""Tests for `src` package."""
+"""Tests for `deftlariat` CLI."""
 
 
 import unittest
 
 from click.testing import CliRunner
-from deftlariat.scripts import cli
 from hamcrest import *
 
+from deftlariat.scripts import cli
 
-class TestSrc(unittest.TestCase):
-    """Tests for `src` package."""
+
+class TestCli(unittest.TestCase):
+    """Tests for `deftlariat` CLI."""
 
     def setUp(self):
         """Set up test fixtures, if any."""
 
     def tearDown(self):
         """Tear down test fixtures, if any."""
-
-    def test_000_something(self):
-        """Test something."""
-        pass
 
     def test_command_line_interface(self):
         """Test the CLI."""
