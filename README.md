@@ -1,13 +1,26 @@
 
 
+# Python Deft Lariats
 
+[![PyPI Version](https://img.shields.io/pypi/v/PyDeftLariats.svg)](https://pypi.python.org/pypi/PyDeftLariats)
+[![Python Versions](https://img.shields.io/pypi/pyversions/PyDeftLariats.svg)](https://pypi.python.org/pypi/PyDeftLariats)
+[![Build Status](https://github.com/mcmasty/PyDeftLariats/workflows/Python%20package/badge.svg)](https://github.com/mcmasty/PyDeftLariats/actions)
+[![Documentation Status](https://readthedocs.org/projects/pydeftlariats/badge/?version=latest)](https://pydeftlariats.readthedocs.io/en/latest/?version=latest)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
+**Using PyHamcrest to build a collection of data filters.**
+
+"Deft Lariats" is an anagram of "Data Filters". The name pays homage to ["hamcrest"](https://github.com/hamcrest/PyHamcrest) being an anagram of "matchers", since this project heavily relies on hamcrest.
+
+---
 
 ### **🧠 What PyDeftLariats Does**
 
 - **Abstracts PyHamcrest matchers into field-based matchers**, allowing structured matching against dictionary-style data records (e.g., rows in a dataset or events in a stream).
 - **Provides reusable, composable matchers** for specific field keys and types: text, numbers, existence, dictionaries, etc.
 - **Enables rule-style matching logic** to be implemented declaratively and extensibly.
-* * *
+
+---
 
 
 
@@ -68,21 +81,65 @@ curl 'https://api.coingecko.com/api/v3/companies/public_treasury/bitcoin' |  jq 
 
 
 
-Comparers:    
-- EqualTo  
-- TextComparer  
-- NumberComparer  
-- Exists  
-- Anything  
-- Nothing  
+## Available Matchers
 
+### Basic Matchers
+- **EqualTo** - Exact equality matching (supports lists)
+- **AnythingMatcher** - Always matches (useful for testing)
+- **NothingMatcher** - Never matches (default/fallback)
+
+### Text Matchers (TextComparer)
+- **STARTS_WITH** - String prefix matching
+- **CONTAINS_STRING** - Substring matching
+- **CONTAINS_STRING_IN_ORDER** - Multiple substrings in order
+- **EQUAL_TO_IGNORE_CASE** - Case-insensitive equality
+- **EQUAL_TO_IGNORE_WHITESPACE** - Whitespace-insensitive equality
+
+### Number Matchers (NumberComparer)
+- **GREATER_THAN** - Numeric comparison >
+- **GREATER_THAN_EQUAL_TO** - Numeric comparison ≥
+- **LESS_THAN** - Numeric comparison <
+- **LESS_THAN_EQUAL_TO** - Numeric comparison ≤
+- **CLOSE_TO** - Approximate equality with delta
+
+### Existence Matchers (ExistsMatchers)
+- **NONE** - Field is None
+- **NOT_NONE** - Field is not None
+- **NONE_OR_EMPTY** - Field is None or empty ([], {}, '', ())
+- **NOT_NONE_OR_EMPTY** - Field has a value
+
+### Dictionary Matchers (DictMatchers)
+- **HAS_ENTRY** - Dictionary contains specific key-value pair
+- **HAS_ENTRIES** - Dictionary contains multiple key-value pairs
 
 ---
 
-# Random Stuff  
+## Installation
 
-### Additional Documentation
+```bash
+# Using pip
+pip install PyDeftLariats
 
-I am playing with MyST for documentation
+# Using uv (recommended)
+uv add PyDeftLariats
+```
 
-Thus, visit [https://pydeftlariats.readthedocs.io/](https://pydeftlariats.readthedocs.io/) for more information.
+## Requirements
+
+- Python 3.11+
+- PyHamcrest ~= 2.1.0
+- Click ~= 8.2.1
+
+---
+
+## Documentation
+
+Full documentation available at [https://pydeftlariats.readthedocs.io/](https://pydeftlariats.readthedocs.io/)
+
+## Contributing
+
+Contributions welcome! Please read [CONTRIBUTING.rst](CONTRIBUTING.rst) for details.
+
+## License
+
+GNU General Public License v3 - see [LICENSE](LICENSE) file for details.

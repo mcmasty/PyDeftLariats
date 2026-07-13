@@ -1,19 +1,21 @@
 """Main module."""
+from __future__ import annotations
+
 __version__ = '0.0.1'
 
 from abc import ABC, abstractmethod
+from enum import Enum
 import logging
+from typing import Any, Callable
 
 from hamcrest import anything, match_equality, equal_to, has_item, starts_with, \
     greater_than, greater_than_or_equal_to, less_than, less_than_or_equal_to, \
     close_to, contains_string, string_contains_in_order, equal_to_ignoring_case, \
     equal_to_ignoring_whitespace, not_none, none, any_of, all_of, is_not, \
     has_entry, has_entries
+from hamcrest.core.matcher import Matcher as HamcrestMatcher
 
 # TODO: did not utilize the "is_" function from hamcrest
-
-
-from enum import Enum
 
 
 class MatcherType(Enum):
@@ -39,24 +41,29 @@ class MatcherType(Enum):
 
 
 # pull values from list...support for list of input parameters and *list syntax
-def pull_val(x):
+def pull_val(x: Any) -> Any:
     return x
 
 
 class Matcher(ABC):
+    """Abstract base class for all matchers."""
 
-    def __init__(self, match_col_key):
+    matcher_type: MatcherType
+    match_col_key: str
+    my_logger: logging.Logger
+
+    def __init__(self, match_col_key: str) -> None:
         self.matcher_type = MatcherType.NOTHING
         self.match_col_key = match_col_key
         self.my_logger = logging.getLogger('matching')
 
     @abstractmethod
-    def is_match(self, match_values, data_record) -> bool:
+    def is_match(self, match_values: Any, data_record: dict[str, Any]) -> bool:
+        """Check if the data record matches the given values."""
         pass
 
-    def validate_key_exists(self, data_record) -> bool:
-        """ Validate match-key-column exists in data record"""
-
+    def validate_key_exists(self, data_record: dict[str, Any]) -> bool:
+        """Validate match-key-column exists in data record."""
         if self.match_col_key not in data_record:
             self.my_logger.warning((f"'{self.match_col_key}' not present"
                                     f" in data record \n\n{data_record}. Matcher will return False\n\n"))
@@ -64,68 +71,66 @@ class Matcher(ABC):
         else:
             return True
 
-    def get_key_val(self):
-        """ Generate a value suitable for hashing, dictionary key"""
+    def get_key_val(self) -> frozenset[str]:
+        """Generate a value suitable for hashing, dictionary key."""
         return frozenset((self.matcher_type.value, self.match_col_key))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (f'{self.__class__.__name__}('
                 f'{self.matcher_type!r}, {self.match_col_key!r})')
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (f'Matcher for {self.matcher_type.value!r} '
                 f'matching on field {self.match_col_key!r}')
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if other.__class__ is self.__class__:
             return (self.matcher_type, self.match_col_key) == \
-                (other.matcher_type, other.match_col_key)
+                (other.matcher_type, other.match_col_key)  # type: ignore
         else:
             return NotImplemented
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.__class__, self.matcher_type, self.match_col_key))
 
 
 class NothingMatcher(Matcher):
-    """
-    Matcher never successfully matches any input. Always returns False.
-    """
+    """Matcher never successfully matches any input. Always returns False."""
 
-    def __init__(self, match_col_key):
+    def __init__(self, match_col_key: str) -> None:
         super().__init__(match_col_key)
         self.match_col_key = match_col_key
         self.matcher_type = MatcherType.NOTHING
 
-    def is_match(self, match_values, data_record) -> bool:
+    def is_match(self, match_values: Any, data_record: dict[str, Any]) -> bool:
         self.my_logger.info("No Matcher set, defaults to Nothing Matcher. Always False.")
         return False
 
 
 class AnythingMatcher(Matcher):
-    """
-    Matcher always successfully matches any input. Always returns True.
-    """
+    """Matcher always successfully matches any input. Always returns True."""
 
-    def __init__(self, match_col_key):
+    my_matcher: HamcrestMatcher[Any]
+
+    def __init__(self, match_col_key: str) -> None:
         super().__init__(match_col_key)
         self.match_col_key = match_col_key
         self.matcher_type = MatcherType.ANYTHING
         self.my_matcher = anything(f"Anything for {match_col_key}")
 
-    def is_match(self, match_values, data_record) -> bool:
+    def is_match(self, match_values: Any, data_record: dict[str, Any]) -> bool:
         return match_equality(self.my_matcher) == data_record
 
 
 class EqualTo(Matcher):
-    """ Equal To matching style. Cast everything to str. """
+    """Equal To matching style. Cast everything to str."""
 
-    def __init__(self, match_col_key, ):
-        super().__init__(match_col_key, )
+    def __init__(self, match_col_key: str) -> None:
+        super().__init__(match_col_key)
         self.match_col_key = match_col_key
         self.matcher_type = MatcherType.EQUAL_TO
 
-    def is_match(self, match_values, data_record) -> bool:
+    def is_match(self, match_values: Any, data_record: dict[str, Any]) -> bool:
         if not self.validate_key_exists(data_record):
             return False
 
@@ -161,8 +166,11 @@ class EqualTo(Matcher):
 
 
 class TextComparer(Matcher):
+    """Text comparison matcher for string operations."""
 
-    def __init__(self, match_col_key, matcher_type):
+    my_matcher: Callable[..., HamcrestMatcher[Any]]
+
+    def __init__(self, match_col_key: str, matcher_type: MatcherType) -> None:
         super().__init__(match_col_key)
         self.match_col_key = match_col_key
 
@@ -189,7 +197,7 @@ class TextComparer(Matcher):
         else:
             raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
 
-    def is_match(self, match_values, data_record) -> bool:
+    def is_match(self, match_values: Any, data_record: dict[str, Any]) -> bool:
 
         if not self.validate_key_exists(data_record):
             return False
@@ -219,8 +227,14 @@ class TextComparer(Matcher):
 
 
 class NumberComparer(Matcher):
+    """Numerical comparison matcher for numeric operations."""
 
-    def __init__(self, match_col_key, matcher_type, convert_none_to=None):
+    my_matcher: Callable[..., HamcrestMatcher[Any]]
+    convert_none: bool
+    replacement_val: int | float | None
+
+    def __init__(self, match_col_key: str, matcher_type: MatcherType,
+                 convert_none_to: int | float | None = None) -> None:
         super().__init__(match_col_key)
         self.match_col_key = match_col_key
         self.replacement_val = None
@@ -252,15 +266,15 @@ class NumberComparer(Matcher):
         else:
             raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
 
-    def get_record_value(self, data_record) -> int:
-        """  If you want to convert a None to an Int, set a replacement value. """
+    def get_record_value(self, data_record: dict[str, Any]) -> int | float:
+        """If you want to convert a None to an Int, set a replacement value."""
         if self.convert_none and data_record[self.match_col_key] is None:
             return_val = self.replacement_val
         else:
             return_val = data_record[self.match_col_key]
-        return return_val
+        return return_val  # type: ignore
 
-    def is_match(self, match_values, data_record) -> bool:
+    def is_match(self, match_values: Any, data_record: dict[str, Any]) -> bool:
         if not self.validate_key_exists(data_record):
             return False
 
@@ -293,8 +307,11 @@ class NumberComparer(Matcher):
 
 
 class ExistsMatchers(Matcher):
+    """Matcher for checking existence/non-existence of values."""
 
-    def __init__(self, match_col_key, matcher_type):
+    my_matcher: Callable[..., HamcrestMatcher[Any]]
+
+    def __init__(self, match_col_key: str, matcher_type: MatcherType) -> None:
         super().__init__(match_col_key)
         self.match_col_key = match_col_key
 
@@ -309,7 +326,7 @@ class ExistsMatchers(Matcher):
         else:
             raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
 
-    def is_match(self, data_record) -> bool:
+    def is_match(self, data_record: dict[str, Any]) -> bool:  # type: ignore[override]
 
         if not self.validate_key_exists(data_record):
             return False
@@ -338,8 +355,11 @@ class ExistsMatchers(Matcher):
 
 
 class DictMatchers(Matcher):
+    """Matcher for dictionary entry matching."""
 
-    def __init__(self, match_col_key, matcher_type):
+    my_matcher: Callable[..., HamcrestMatcher[Any]]
+
+    def __init__(self, match_col_key: str, matcher_type: MatcherType) -> None:
         super().__init__(match_col_key)
         self.match_col_key = match_col_key
 
@@ -354,7 +374,7 @@ class DictMatchers(Matcher):
         else:
             raise NotImplementedError(f"Matcher for {matcher_type} not implemented")
 
-    def is_match(self, *match_values, data_record) -> bool:
+    def is_match(self, *match_values: Any, data_record: dict[str, Any]) -> bool:  # type: ignore[override]
         if not self.validate_key_exists(data_record):
             return False
 

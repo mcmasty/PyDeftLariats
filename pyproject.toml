@@ -20,11 +20,11 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 requires-python = ">=3.11"
 dependencies = [
     "click~=8.2.1",
-    "alabaster>=1.0.0",
     "PyHamcrest~=2.1.0",
 ]
 
@@ -37,10 +37,12 @@ dev = [
     "tox==4.26.0",
     "coverage==7.8.2",
     "Sphinx==8.2.3",
+    "alabaster>=1.0.0",
     "twine==6.1.0",
     "sphinxcontrib-mermaid==1.0.0",
     "ruff==0.11.11",
     "myst_parser==4.0.1",
+    "pyrefly>=1.1.1",
 ]
 
 [project.scripts]
@@ -65,3 +67,7 @@ select = ["E", "F"]
 fixable = ["ALL"]
 # Allow unused variables when underscore-prefixed
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.pyrefly]
+# Pyrefly configuration (Rust-based type checker - faster than pyright/mypy)
+# Note: Pyrefly is configured via command-line flags in CI
